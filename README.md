@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CPF Group Analytics Dashboard
 
-## Getting Started
+A prototype multi-subsidiary analytics dashboard for CPF Group — Rukisha, CPF Financial
+Services and CPF Capital & Advisory — built for a CPF Group finance manager. All data is
+illustrative dummy data; see the Phase 1 Scope Note for what's in and out of scope.
 
-First, run the development server:
+Built against the Software Design Document (`Phase 3 - Design (Software Design
+Document).docx`) and the Week 7 & 8 Execution Plan in the project's `Project/` docs folder.
+
+## Tech stack
+
+- **Next.js** (App Router) + **TypeScript** — application framework, hosted on Vercel
+- **Postgres via Supabase** — system of record, subsidiary-partitioned schema
+- **Python + pandas + Faker** — dummy data generation (`data/`)
+- **GitHub Actions** — CI (format check, lint, build) on every push/PR
+- **Vercel** — CI/CD deployment and hosting
+- **ESLint + Prettier + Husky + lint-staged** — code quality, enforced locally and in CI
+
+## Local setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.local.example .env.local   # fill in your own Supabase project values
+npm run dev                        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Python environment (dummy data)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cd data
+python -m venv .venv
+.venv\Scripts\activate             # Windows; use `source .venv/bin/activate` on macOS/Linux
+pip install -r requirements.txt
+python seed.py                     # generates and loads the dummy dataset
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+| Command                | Purpose                               |
+| ---------------------- | ------------------------------------- |
+| `npm run dev`          | Start the local dev server            |
+| `npm run build`        | Production build (same check CI runs) |
+| `npm run lint`         | ESLint                                |
+| `npm run format`       | Prettier — write                      |
+| `npm run format:check` | Prettier — check only (what CI runs)  |
 
-To learn more about Next.js, take a look at the following resources:
+## Git workflow
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Commit messages** follow [Conventional Commits](https://www.conventionalcommits.org/):
+  `feat: add default rate tile`, `fix: handle zero-denominator in repayment rate`,
+  `chore: update eslint config`, `docs: update README setup steps`.
+- A **pre-commit hook** (Husky + lint-staged) runs ESLint and Prettier on staged files
+  before every commit.
+- **CI** (`.github/workflows/ci.yml`) runs a format check, lint and build on every push and
+  pull request to `main`; a failing check blocks the merge.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## One-time manual setup (not automatable from this repo)
 
-## Deploy on Vercel
+These three steps need your own GitHub, Vercel and Supabase accounts — do them once, in
+this order:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 1. GitHub repository
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+git add -A
+git commit -m "chore: initial Next.js scaffold, CI, and tooling (Phase 4)"
+```
+
+Then, on [github.com](https://github.com), create a new **empty** repository (no README/
+.gitignore/license — this project already has them), and push:
+
+```bash
+git remote add origin https://github.com/<your-username>/<your-repo-name>.git
+git branch -M main
+git push -u origin main
+```
+
+### 2. Vercel
+
+1. Sign in at [vercel.com](https://vercel.com) with your GitHub account.
+2. **Add New → Project**, and import the repository you just pushed.
+3. Vercel auto-detects Next.js — leave the default build settings.
+4. Add the same environment variables from `.env.local` under **Project Settings →
+   Environment Variables** (so the deployed app can reach Supabase).
+5. Deploy. Every push to `main` will now auto-deploy to production, and every pull request
+   gets its own preview deployment.
+
+### 3. Supabase
+
+1. Sign in at [supabase.com](https://supabase.com) and create a new project.
+2. Once provisioned, go to **Project Settings → API** and copy the Project URL and the
+   `anon` and `service_role` keys into your `.env.local` (and into Vercel's environment
+   variables, step 2 above).
+3. Go to **Project Settings → Database** and copy the connection string into
+   `DATABASE_URL` in `.env.local` — this is what `data/seed.py` uses to load the dummy
+   dataset.
+4. Run the schema migrations (added in Phase 5) and then `python data/seed.py` to populate
+   the dummy data.
+
+## Project structure
+
+```
+src/           Next.js application (App Router)
+data/          Python dummy-data generation (requirements.txt, seed.py)
+.github/       GitHub Actions CI workflow
+.husky/        Pre-commit hook
+```
