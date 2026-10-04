@@ -4,8 +4,12 @@ A prototype multi-subsidiary analytics dashboard for CPF Group — Rukisha, CPF 
 Services and CPF Capital & Advisory — built for a CPF Group finance manager. All data is
 illustrative dummy data; see the Phase 1 Scope Note for what's in and out of scope.
 
-Built against the Software Design Document (`Phase 3 - Design (Software Design
-Document).docx`) and the Week 7 & 8 Execution Plan in the project's `Project/` docs folder.
+**Picking this project up fresh (human or AI)? Read [`docs/HANDOFF.md`](docs/HANDOFF.md)
+first** — it states current status, what's verified vs. assumed, and exactly what's left,
+in that order. This README covers setup; HANDOFF.md covers "where things actually stand."
+
+Built against the Software Design Document (`docs/Phase 3 - Design (Software Design
+Document).docx`) and the Week 7 & 8 Execution Plan in `docs/`.
 
 ## Tech stack
 
