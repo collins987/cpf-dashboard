@@ -191,26 +191,19 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
           {tab === "about" ? (
             <AboutSection lastUpdatedLabel={refreshMeta.lastUpdatedLabel} />
           ) : null}
-
-          <div className="pagefooter">
-            CPF Group Analytics Dashboard — Prototype · Illustrative dummy data for demonstration
-            purposes only · © {new Date().getFullYear()} CPF Group
-          </div>
         </div>
       </div>
 
       <div className="footer">
         <div className="footerinner">
           <div className="footerbrand">
-            <div className="logochip">
-              <Image
-                src="/cpf-group-logo.png"
-                alt="CPF Group"
-                width={120}
-                height={120}
-                style={{ height: 32, width: "auto", display: "block" }}
-              />
-            </div>
+            <Image
+              src="/cpf-group-logo.png"
+              alt="CPF Group"
+              width={120}
+              height={120}
+              className="footerlogo"
+            />
             <span className="footertagline">
               Fulfilling Lives — pension funds administration, trust fund administration, agency
               services, digital financial services, and capital markets advisory under one group.
