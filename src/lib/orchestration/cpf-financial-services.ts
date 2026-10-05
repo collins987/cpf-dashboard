@@ -13,25 +13,48 @@ import {
   calculateAgencyFeeIncome,
 } from "@/lib/calculations/cpf-financial-services";
 import {
-  pensionSchemes,
-  schemeMembers,
-  contributions,
-  withdrawals,
-  trustAccounts,
-  trustBeneficiaries,
-  agencyMandates,
-  agencyTransactions,
-  feeLedger,
-} from "@/lib/fixtures/cpf-financial-services";
+  getPensionSchemes,
+  getSchemeMembers,
+  getContributions,
+  getWithdrawals,
+  getTrustAccounts,
+  getTrustBeneficiaries,
+  getAgencyMandates,
+  getAgencyTransactions,
+  getFeeLedger,
+} from "@/lib/data/cpf-financial-services-queries";
 import { formatKes, formatNumber, formatPercent } from "@/lib/format";
 import { syntheticTrend } from "./trend";
-import type { SubsidiaryView } from "./view-models";
+import type { SubsidiaryView, SubsidiaryTotals } from "./view-models";
 
 const OPENING_BALANCE = 17_900_000_000;
 const INVESTMENT_RETURNS = 420_000_000;
 const PRIOR_PERIOD_AUA = 8_950_000_000;
 
-export function getCpfFinancialServicesView(): SubsidiaryView {
+export async function getCpfFinancialServicesView(): Promise<{
+  view: SubsidiaryView;
+  totals: SubsidiaryTotals;
+}> {
+  const [pensionSchemes, trustAccounts, agencyMandates, feeLedger] = await Promise.all([
+    getPensionSchemes(),
+    getTrustAccounts(),
+    getAgencyMandates(),
+    getFeeLedger(),
+  ]);
+
+  const schemeIds = pensionSchemes.map((s) => s.id);
+  const trustIds = trustAccounts.map((t) => t.id);
+  const mandateIds = agencyMandates.map((m) => m.id);
+
+  const [schemeMembers, contributions, withdrawals, trustBeneficiaries, agencyTransactions] =
+    await Promise.all([
+      getSchemeMembers(schemeIds),
+      getContributions(schemeIds),
+      getWithdrawals(schemeIds),
+      getTrustBeneficiaries(trustIds),
+      getAgencyTransactions(mandateIds),
+    ]);
+
   const memberContributions = calculateMemberContributions(contributions);
   const fundBalance = calculateFundBalance(
     OPENING_BALANCE,
@@ -52,7 +75,7 @@ export function getCpfFinancialServicesView(): SubsidiaryView {
   const principalsServed = calculatePrincipalsServed(agencyMandates);
   const agencyFeeIncome = calculateAgencyFeeIncome(feeLedger);
 
-  return {
+  const view: SubsidiaryView = {
     tag: "Pensions, Trust & Agency",
     subtitle: "Pension fund administration, trust fund administration and agency services.",
     pillars: [
@@ -166,14 +189,12 @@ export function getCpfFinancialServicesView(): SubsidiaryView {
       },
     ],
   };
-}
 
-export const cpfFinancialServicesTotals = {
-  headlineAum: () =>
-    calculateAssetsUnderAdministration(trustAccounts) +
-    calculateFundBalance(OPENING_BALANCE, contributions, withdrawals, INVESTMENT_RETURNS),
-  activeClients: () => calculateMembers(schemeMembers),
-  transactionValue: () =>
-    calculateMemberContributions(contributions) +
-    calculateAgencyTransactionValue(agencyTransactions),
-};
+  const totals: SubsidiaryTotals = {
+    headlineAum: aua + fundBalance,
+    activeClients: members,
+    transactionValue: memberContributions + agencyValue,
+  };
+
+  return { view, totals };
+}

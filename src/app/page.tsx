@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { DashboardShell } from "@/components/DashboardShell";
 import { getRukishaView } from "@/lib/orchestration/rukisha";
 import { getCpfFinancialServicesView } from "@/lib/orchestration/cpf-financial-services";
@@ -10,11 +12,19 @@ import { getGroupView } from "@/lib/orchestration/group";
  * the browser. The Entry/Interface layer (DashboardShell and below) only
  * ever sees the finished view models — never raw rows or Supabase.
  */
-export default function Home() {
-  const rukisha = getRukishaView();
-  const cpffs = getCpfFinancialServicesView();
-  const cpfca = getCpfCapitalAdvisoryView();
-  const group = getGroupView();
+export default async function Home() {
+  const [rukisha, cpffs, cpfca] = await Promise.all([
+    getRukishaView(),
+    getCpfFinancialServicesView(),
+    getCpfCapitalAdvisoryView(),
+  ]);
+  const group = await getGroupView({
+    rukisha: rukisha.totals,
+    cpffs: cpffs.totals,
+    cpfca: cpfca.totals,
+  });
 
-  return <DashboardShell rukisha={rukisha} cpffs={cpffs} cpfca={cpfca} group={group} />;
+  return (
+    <DashboardShell rukisha={rukisha.view} cpffs={cpffs.view} cpfca={cpfca.view} group={group} />
+  );
 }

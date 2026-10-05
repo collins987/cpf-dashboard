@@ -13,17 +13,30 @@ import {
   calculateSubscriptionRate,
 } from "@/lib/calculations/cpf-capital-advisory";
 import {
-  reitHoldings,
-  reitNavHistory,
-  reitDistributions,
-  deals,
-  issuances,
-} from "@/lib/fixtures/cpf-capital-advisory";
+  getReitHoldings,
+  getReitNavHistory,
+  getReitDistributions,
+  getDealsYtd,
+  getIssuancesYtd,
+} from "@/lib/data/cpf-capital-advisory-queries";
 import { formatKes, formatNumber, formatPercent } from "@/lib/format";
 import { syntheticTrend } from "./trend";
-import type { SubsidiaryView, BulletRow } from "./view-models";
+import type { SubsidiaryView, SubsidiaryTotals, BulletRow } from "./view-models";
 
-export function getCpfCapitalAdvisoryView(): SubsidiaryView {
+const YEAR_START = "2026-01-01";
+
+export async function getCpfCapitalAdvisoryView(): Promise<{
+  view: SubsidiaryView;
+  totals: SubsidiaryTotals;
+}> {
+  const [reitHoldings, reitNavHistory, reitDistributions, deals, issuances] = await Promise.all([
+    getReitHoldings(),
+    getReitNavHistory(),
+    getReitDistributions(),
+    getDealsYtd(YEAR_START),
+    getIssuancesYtd(YEAR_START),
+  ]);
+
   const latestNav = getLatestUnitNav(reitNavHistory) ?? 0;
   const reitAum = calculateReitAum(reitHoldings, latestNav);
   const unitHolders = calculateUnitHolders(reitHoldings);
@@ -40,9 +53,9 @@ export function getCpfCapitalAdvisoryView(): SubsidiaryView {
   const issuanceValue = calculateIssuanceValueYtd(issuances);
   const weightedAvgProfitRate = calculateWeightedAvgProfitRate(issuances);
   const latestIssuance = issuances[issuances.length - 1];
-  const latestSubscriptionRate = calculateSubscriptionRate(latestIssuance);
+  const latestSubscriptionRate = latestIssuance ? calculateSubscriptionRate(latestIssuance) : null;
 
-  const SCALE_MAX = 1.3; // 130% — gives the bullet chart headroom above the highest subscription rate
+  const SCALE_MAX = 1.3;
   const bullets: BulletRow[] = issuances.map((issuance) => {
     const rate = calculateSubscriptionRate(issuance) ?? 0;
     return {
@@ -56,7 +69,7 @@ export function getCpfCapitalAdvisoryView(): SubsidiaryView {
     };
   });
 
-  return {
+  const view: SubsidiaryView = {
     tag: "Capital Markets & Alternative Investments",
     subtitle:
       "Alternative investments and capital markets advisory, from REITs to structured and debt finance.",
@@ -167,16 +180,11 @@ export function getCpfCapitalAdvisoryView(): SubsidiaryView {
       },
     ],
   };
-}
 
-export const cpfCapitalAdvisoryTotals = {
-  headlineAum: () => {
-    const latestNav = getLatestUnitNav(reitNavHistory) ?? 0;
-    return (
-      calculateReitAum(reitHoldings, latestNav) +
-      calculateDealValueYtd(deals) +
-      calculateIssuanceValueYtd(issuances)
-    );
-  },
-  activeClients: () => calculateUnitHolders(reitHoldings),
-};
+  const totals: SubsidiaryTotals = {
+    headlineAum: reitAum + dealValue + issuanceValue,
+    activeClients: unitHolders,
+  };
+
+  return { view, totals };
+}

@@ -4,38 +4,38 @@ import {
   calculateGroupTransactionValue,
   getLatestPensionLinkSummary,
 } from "@/lib/calculations/group";
-import { rukishaTotals } from "./rukisha";
-import { cpfFinancialServicesTotals } from "./cpf-financial-services";
-import { cpfCapitalAdvisoryTotals } from "./cpf-capital-advisory";
-import { pensionLinkSummary } from "@/lib/fixtures/group";
+import { getPensionLinkSummary } from "@/lib/data/group-queries";
 import { formatKes, formatNumber, formatPercent } from "@/lib/format";
-import type { GroupView } from "./view-models";
+import type { GroupView, SubsidiaryTotals } from "./view-models";
 
-export function getGroupView(): GroupView {
-  const rukishaAum = rukishaTotals.headlineAum();
-  const cpffsAum = cpfFinancialServicesTotals.headlineAum();
-  const cpfcaAum = cpfCapitalAdvisoryTotals.headlineAum();
+export async function getGroupView(args: {
+  rukisha: SubsidiaryTotals;
+  cpffs: SubsidiaryTotals;
+  cpfca: SubsidiaryTotals;
+}): Promise<GroupView> {
+  const { rukisha, cpffs, cpfca } = args;
+  const pensionLinkSummary = await getPensionLinkSummary();
 
   const snapshot = [
     {
       name: "Rukisha",
       color: "rukisha" as const,
-      headlineAum: formatKes(rukishaAum),
-      activeClients: formatNumber(rukishaTotals.activeClients()),
+      headlineAum: formatKes(rukisha.headlineAum),
+      activeClients: formatNumber(rukisha.activeClients),
       deltaLabel: "▲ 6.8% avg growth",
     },
     {
       name: "CPF Financial Services",
       color: "cpffs" as const,
-      headlineAum: formatKes(cpffsAum),
-      activeClients: formatNumber(cpfFinancialServicesTotals.activeClients()),
+      headlineAum: formatKes(cpffs.headlineAum),
+      activeClients: formatNumber(cpffs.activeClients),
       deltaLabel: "▲ 3.7% avg growth",
     },
     {
       name: "CPF Capital & Advisory",
       color: "cpfca" as const,
-      headlineAum: formatKes(cpfcaAum),
-      activeClients: formatNumber(cpfCapitalAdvisoryTotals.activeClients()),
+      headlineAum: formatKes(cpfca.headlineAum),
+      activeClients: formatNumber(cpfca.activeClients),
       deltaLabel: "▲ 8.7% avg growth",
     },
   ];
@@ -67,18 +67,18 @@ export function getGroupView(): GroupView {
   ];
 
   const totalAum = calculateTotalGroupAum([
-    { headlineAum: rukishaAum, activeClients: 0 },
-    { headlineAum: cpffsAum, activeClients: 0 },
-    { headlineAum: cpfcaAum, activeClients: 0 },
+    { headlineAum: rukisha.headlineAum, activeClients: 0 },
+    { headlineAum: cpffs.headlineAum, activeClients: 0 },
+    { headlineAum: cpfca.headlineAum, activeClients: 0 },
   ]);
   const totalActiveClients = calculateTotalActiveClients([
-    { headlineAum: 0, activeClients: rukishaTotals.activeClients() },
-    { headlineAum: 0, activeClients: cpfFinancialServicesTotals.activeClients() },
-    { headlineAum: 0, activeClients: cpfCapitalAdvisoryTotals.activeClients() },
+    { headlineAum: 0, activeClients: rukisha.activeClients },
+    { headlineAum: 0, activeClients: cpffs.activeClients },
+    { headlineAum: 0, activeClients: cpfca.activeClients },
   ]);
   const totalTransactionValue = calculateGroupTransactionValue([
-    rukishaTotals.transactionValue(),
-    cpfFinancialServicesTotals.transactionValue(),
+    rukisha.transactionValue ?? 0,
+    cpffs.transactionValue ?? 0,
   ]);
 
   const scorecard = [

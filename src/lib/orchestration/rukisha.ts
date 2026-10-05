@@ -15,45 +15,56 @@ import {
 } from "@/lib/calculations/rukisha";
 import { calculateHeadlineAum } from "@/lib/calculations/group";
 import {
-  rukishaLoans,
-  rukishaRepayments,
-  rukishaWallets,
-  rukishaTransactions,
-  rukishaSavings,
-} from "@/lib/fixtures/rukisha";
+  getLoanAccounts,
+  getRepayments,
+  getWallets,
+  getTransactions,
+  getSavingsAccounts,
+} from "@/lib/data/rukisha-queries";
 import { formatKes, formatNumber, formatPercent } from "@/lib/format";
 import { syntheticTrend } from "./trend";
-import type { SubsidiaryView } from "./view-models";
+import type { SubsidiaryView, SubsidiaryTotals } from "./view-models";
 
 /**
  * Note on deltas: period-over-period deltas (the "▲ x% MoM" labels) require a
- * prior-period dataset, which the current fixtures/seed script do not yet
- * generate. The labels below are illustrative placeholders, matching the
- * approved dashboard mockup, until a prior-period query is added.
+ * prior-period dataset, which the current seed script does not yet generate.
+ * The labels below are illustrative placeholders, matching the approved
+ * dashboard mockup, until a prior-period query is added.
  */
 
-export function getRukishaView(): SubsidiaryView {
-  const activeLoans = rukishaLoans.filter((l) => l.status === "active");
-  const portfolioValue = calculatePortfolioValue(rukishaLoans);
-  const activeBorrowers = calculateActiveBorrowers(rukishaLoans);
-  const repaymentRate = calculateRepaymentRate(rukishaRepayments);
-  const defaultRate = calculateDefaultRate(rukishaLoans);
-  const byProduct = calculateDefaultRateByProduct(rukishaLoans);
+export async function getRukishaView(): Promise<{
+  view: SubsidiaryView;
+  totals: SubsidiaryTotals;
+}> {
+  const loans = await getLoanAccounts();
+  const [repayments, wallets, transactions, savings] = await Promise.all([
+    getRepayments(loans.map((l) => l.id)),
+    getWallets(),
+    getTransactions(),
+    getSavingsAccounts(),
+  ]);
 
-  const transactionVolume = calculateTransactionVolume(rukishaTransactions);
-  const transactionValue = calculateTransactionValue(rukishaTransactions);
-  const activeWallets = calculateActiveWallets(rukishaWallets);
-  const avgTransactionSize = calculateAvgTransactionSize(rukishaTransactions);
+  const activeLoans = loans.filter((l) => l.status === "active");
+  const portfolioValue = calculatePortfolioValue(loans);
+  const activeBorrowers = calculateActiveBorrowers(loans);
+  const repaymentRate = calculateRepaymentRate(repayments);
+  const defaultRate = calculateDefaultRate(loans);
+  const byProduct = calculateDefaultRateByProduct(loans);
 
-  const goalBased = calculateGoalBasedSavings(rukishaSavings);
-  const pensionLinked = calculatePensionLinkedSavings(rukishaSavings);
-  const activeSavers = calculateActiveSavers(rukishaSavings);
+  const transactionVolume = calculateTransactionVolume(transactions);
+  const transactionValue = calculateTransactionValue(transactions);
+  const activeWallets = calculateActiveWallets(wallets);
+  const avgTransactionSize = calculateAvgTransactionSize(transactions);
+
+  const goalBased = calculateGoalBasedSavings(savings);
+  const pensionLinked = calculatePensionLinkedSavings(savings);
+  const activeSavers = calculateActiveSavers(savings);
   const savingsToLoan = calculateSavingsToLoanRatio(
     goalBased + pensionLinked.total,
     portfolioValue,
   );
 
-  return {
+  const view: SubsidiaryView = {
     tag: "Digital Financial Services",
     subtitle:
       "Mobile wallet — credit access, merchant payments, fund transfers, and goal-based & pension-linked savings.",
@@ -170,15 +181,12 @@ export function getRukishaView(): SubsidiaryView {
       },
     ],
   };
-}
 
-export const rukishaTotals = {
-  headlineAum: () => {
-    const portfolioValue = calculatePortfolioValue(rukishaLoans);
-    const { total: pensionLinkedTotal } = calculatePensionLinkedSavings(rukishaSavings);
-    const goalBased = calculateGoalBasedSavings(rukishaSavings);
-    return calculateHeadlineAum([portfolioValue, goalBased, pensionLinkedTotal]);
-  },
-  activeClients: () => calculateActiveWallets(rukishaWallets),
-  transactionValue: () => calculateTransactionValue(rukishaTransactions),
-};
+  const totals: SubsidiaryTotals = {
+    headlineAum: calculateHeadlineAum([portfolioValue, goalBased, pensionLinked.total]),
+    activeClients: activeWallets,
+    transactionValue,
+  };
+
+  return { view, totals };
+}

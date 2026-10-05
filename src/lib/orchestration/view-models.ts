@@ -64,3 +64,9 @@ export interface GroupView {
   flow: FlowCard[];
   scorecard: ScoreTile[];
 }
+
+export interface SubsidiaryTotals {
+  headlineAum: number;
+  activeClients: number;
+  transactionValue?: number;
+}

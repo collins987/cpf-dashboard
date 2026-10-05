@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import {
   ChevronRightIcon,
   ChevronDownIcon,
@@ -52,8 +53,8 @@ export function GroupSection({ group }: { group: GroupView }) {
       <span className="sectiontitle serif">Connection — how the three subsidiaries interact</span>
       <div className="flowrow">
         {group.flow.map((f, i) => (
-          <>
-            <div className="flowcard" key={f.name}>
+          <Fragment key={f.name}>
+            <div className="flowcard">
               <div className="snaphead">
                 <span
                   className="dot"
@@ -73,12 +74,12 @@ export function GroupSection({ group }: { group: GroupView }) {
               <span className="flowdesc">{f.description}</span>
             </div>
             {i < group.flow.length - 1 ? (
-              <div className="flowconnector" key={`${f.name}-connector`}>
+              <div className="flowconnector">
                 <ChevronRightIcon className="chevright" />
                 <ChevronDownIcon className="chevdown" />
               </div>
             ) : null}
-          </>
+          </Fragment>
         ))}
       </div>
 
