@@ -6,7 +6,7 @@ import type {
   SavingsAccountRow,
   Subsidiary,
 } from "@/types/database";
-import { runSelect } from "./helpers";
+import { runSelect, runSelectIn } from "./helpers";
 
 function mapLoanAccount(r: Record<string, unknown>): LoanAccountRow {
   return {
@@ -70,8 +70,7 @@ export function getLoanAccounts(
 }
 
 export function getRepayments(loanAccountIds: string[]): Promise<RepaymentRow[]> {
-  if (loanAccountIds.length === 0) return Promise.resolve([]);
-  return runSelect("repayment", (q) => q.in("loan_account_id", loanAccountIds), mapRepayment);
+  return runSelectIn("repayment", "loan_account_id", loanAccountIds, (q) => q, mapRepayment);
 }
 
 export function getTransactions(

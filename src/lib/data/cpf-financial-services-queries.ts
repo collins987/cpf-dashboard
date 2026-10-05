@@ -10,7 +10,7 @@ import type {
   FeeLedgerRow,
   Subsidiary,
 } from "@/types/database";
-import { runSelect } from "./helpers";
+import { runSelect, runSelectIn } from "./helpers";
 
 export const SUBSIDIARY_CPF_FS: Subsidiary = "cpf_financial_services";
 
@@ -81,10 +81,11 @@ export function getPensionSchemes(
 }
 
 export function getSchemeMembers(pensionSchemeIds: string[]): Promise<SchemeMemberRow[]> {
-  if (pensionSchemeIds.length === 0) return Promise.resolve([]);
-  return runSelect(
+  return runSelectIn(
     "scheme_member",
-    (q) => q.in("pension_scheme_id", pensionSchemeIds),
+    "pension_scheme_id",
+    pensionSchemeIds,
+    (q) => q,
     mapSchemeMember,
   );
 }
@@ -93,13 +94,11 @@ export function getContributions(
   pensionSchemeIds: string[],
   period?: string,
 ): Promise<ContributionRow[]> {
-  if (pensionSchemeIds.length === 0) return Promise.resolve([]);
-  return runSelect(
+  return runSelectIn(
     "contribution",
-    (q) =>
-      period
-        ? q.in("pension_scheme_id", pensionSchemeIds).eq("period", period)
-        : q.in("pension_scheme_id", pensionSchemeIds),
+    "pension_scheme_id",
+    pensionSchemeIds,
+    (q) => (period ? q.eq("period", period) : q),
     mapContribution,
   );
 }
@@ -108,13 +107,11 @@ export function getWithdrawals(
   pensionSchemeIds: string[],
   period?: string,
 ): Promise<WithdrawalRow[]> {
-  if (pensionSchemeIds.length === 0) return Promise.resolve([]);
-  return runSelect(
+  return runSelectIn(
     "withdrawal",
-    (q) =>
-      period
-        ? q.in("pension_scheme_id", pensionSchemeIds).eq("period", period)
-        : q.in("pension_scheme_id", pensionSchemeIds),
+    "pension_scheme_id",
+    pensionSchemeIds,
+    (q) => (period ? q.eq("period", period) : q),
     mapWithdrawal,
   );
 }
@@ -126,10 +123,11 @@ export function getTrustAccounts(
 }
 
 export function getTrustBeneficiaries(trustAccountIds: string[]): Promise<TrustBeneficiaryRow[]> {
-  if (trustAccountIds.length === 0) return Promise.resolve([]);
-  return runSelect(
+  return runSelectIn(
     "trust_beneficiary",
-    (q) => q.in("trust_account_id", trustAccountIds),
+    "trust_account_id",
+    trustAccountIds,
+    (q) => q,
     mapTrustBeneficiary,
   );
 }
@@ -141,10 +139,11 @@ export function getAgencyMandates(
 }
 
 export function getAgencyTransactions(agencyMandateIds: string[]): Promise<AgencyTransactionRow[]> {
-  if (agencyMandateIds.length === 0) return Promise.resolve([]);
-  return runSelect(
+  return runSelectIn(
     "agency_transaction",
-    (q) => q.in("agency_mandate_id", agencyMandateIds),
+    "agency_mandate_id",
+    agencyMandateIds,
+    (q) => q,
     mapAgencyTransaction,
   );
 }

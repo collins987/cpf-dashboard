@@ -19,13 +19,14 @@ import os
 import random
 import uuid
 from datetime import date, timedelta
+from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
 from faker import Faker
 from sqlalchemy import create_engine
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent.parent / ".env.local")
 fake = Faker()
 
 RUKISHA = "rukisha"

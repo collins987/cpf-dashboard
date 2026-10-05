@@ -23,3 +23,25 @@ export async function runSelect<T>(
   }
   return ((data as Record<string, unknown>[]) ?? []).map(mapRow);
 }
+
+// PostgREST sends filters in the URL; a large .in(...) list blows past the
+// server's URL-length limit. Chunk the id list and union the results.
+const IN_CHUNK_SIZE = 300;
+
+export async function runSelectIn<T>(
+  table: string,
+  column: string,
+  ids: string[],
+  build: (query: QueryBuilder) => QueryBuilder,
+  mapRow: (row: Record<string, unknown>) => T,
+): Promise<T[]> {
+  if (ids.length === 0) return [];
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += IN_CHUNK_SIZE) {
+    chunks.push(ids.slice(i, i + IN_CHUNK_SIZE));
+  }
+  const results = await Promise.all(
+    chunks.map((chunk) => runSelect(table, (q) => build(q.in(column, chunk)), mapRow)),
+  );
+  return results.flat();
+}
