@@ -10,9 +10,10 @@ type QueryBuilder = any;
  * type, so a raw Supabase/Postgres error (or row shape) never reaches the
  * Orchestration layer — only a typed DataAccessError or typed rows do.
  */
-// PostgREST caps every SELECT at 1000 rows by default. We page through with
-// .range() until a short page comes back, so callers get the full set.
-const PAGE_SIZE = 1000;
+// PostgREST caps every SELECT at 1000 rows by default. Explicitly request a
+// larger range so small-but->1000-row tables (loan_account at 1200, etc.) come
+// back in one request. All tables in this project are well under this cap.
+const MAX_ROWS = 50000;
 
 export async function runSelect<T>(
   table: string,
@@ -21,22 +22,16 @@ export async function runSelect<T>(
   mapRow: (row: Record<string, unknown>) => T,
 ): Promise<T[]> {
   const client = getSupabaseClient();
-  const all: Record<string, unknown>[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await build(
-      client
-        .from(table)
-        .select("*")
-        .range(from, from + PAGE_SIZE - 1),
-    );
-    if (error) {
-      throw new DataAccessError(`Failed to fetch from "${table}"`, error);
-    }
-    const page = (data as Record<string, unknown>[]) ?? [];
-    all.push(...page);
-    if (page.length < PAGE_SIZE) break;
+  const { data, error } = await build(
+    client
+      .from(table)
+      .select("*")
+      .range(0, MAX_ROWS - 1),
+  );
+  if (error) {
+    throw new DataAccessError(`Failed to fetch from "${table}"`, error);
   }
-  return all.map(mapRow);
+  return ((data as Record<string, unknown>[]) ?? []).map(mapRow);
 }
 
 // PostgREST sends filters in the URL; a large .in(...) list blows past the
