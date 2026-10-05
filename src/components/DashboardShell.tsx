@@ -197,13 +197,15 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
       <div className="footer">
         <div className="footerinner">
           <div className="footerbrand">
-            <Image
-              src="/cpf-group-logo.png"
-              alt="CPF Group"
-              width={120}
-              height={120}
-              className="footerlogo"
-            />
+            <div className="footerlogochip">
+              <Image
+                src="/cpf-group-logo.png"
+                alt="CPF Group"
+                width={120}
+                height={120}
+                style={{ height: 28, width: 28, display: "block", objectFit: "contain" }}
+              />
+            </div>
             <span className="footertagline">
               Fulfilling Lives — pension funds administration, trust fund administration, agency
               services, digital financial services, and capital markets advisory under one group.

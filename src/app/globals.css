@@ -830,13 +830,20 @@ a {
   margin-top: 32px;
 }
 
-.footerlogo {
-  height: 36px;
-  width: auto;
-  display: block;
+.footerlogochip {
   background: #ffffff;
-  padding: 6px 10px;
   border-radius: 8px;
+  padding: 4px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.footerbrand {
+  align-items: flex-start;
 }
 
 .footerinner {
