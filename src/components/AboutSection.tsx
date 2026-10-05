@@ -1,6 +1,6 @@
 import { CodeIcon, DatabaseIcon, PipelineIcon } from "./icons";
 
-export function AboutSection() {
+export function AboutSection({ lastUpdatedLabel }: { lastUpdatedLabel: string }) {
   return (
     <>
       <div className="card">
@@ -87,7 +87,7 @@ export function AboutSection() {
           design, for a two-week build.
         </p>
         <p style={{ fontSize: 12, color: "#8B93A1", margin: 0 }}>
-          Version 1.0 · Last updated 30 Jun 2026
+          Version 1.0 · Last updated {lastUpdatedLabel}
         </p>
       </div>
     </>

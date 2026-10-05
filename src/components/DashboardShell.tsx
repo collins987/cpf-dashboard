@@ -7,6 +7,7 @@ import { PillarSection } from "./PillarSection";
 import { GroupSection } from "./GroupSection";
 import { AboutSection } from "./AboutSection";
 import type { SubsidiaryView, GroupView } from "@/lib/orchestration/view-models";
+import type { RefreshMeta } from "@/lib/orchestration/refresh-meta";
 
 type TabId = "rukisha" | "cpffs" | "cpfca" | "group" | "about";
 type Period = "MoM" | "QoQ" | "YTD";
@@ -16,6 +17,7 @@ interface DashboardShellProps {
   cpffs: SubsidiaryView;
   cpfca: SubsidiaryView;
   group: GroupView;
+  refreshMeta: RefreshMeta;
 }
 
 const TAB_LABELS: Record<Exclude<TabId, "about">, string> = {
@@ -29,12 +31,6 @@ const TAG_COLORS: Record<"rukisha" | "cpffs" | "cpfca", string> = {
   rukisha: "#1F5FA8",
   cpffs: "#2E8B57",
   cpfca: "#C1440E",
-};
-
-const PERIOD_RANGES: Record<Period, string> = {
-  MoM: "Jun 2026 vs May 2026",
-  QoQ: "Q2 2026 vs Q1 2026",
-  YTD: "Jan – Jun 2026",
 };
 
 const ALERTS = [
@@ -55,7 +51,7 @@ const ALERTS = [
   },
 ];
 
-export function DashboardShell({ rukisha, cpffs, cpfca, group }: DashboardShellProps) {
+export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: DashboardShellProps) {
   const [tab, setTab] = useState<TabId>("rukisha");
   const [navOpen, setNavOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
@@ -156,7 +152,7 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group }: DashboardShellP
           <span className="serif herotitle">{headerTitle}</span>
           <span className="herosub">{headerSubtitle}</span>
           <span className="herometa">
-            Data last refreshed 30 Jun 2026, 14:02 EAT · illustrative dummy dataset
+            Data last refreshed {refreshMeta.refreshedAtLabel} · illustrative dummy dataset
           </span>
           <div className="herotools">
             <div className="searchbox">
@@ -174,7 +170,7 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group }: DashboardShellP
                 </button>
               ))}
             </div>
-            <span className="btnline">{PERIOD_RANGES[period]}</span>
+            <span className="btnline">{refreshMeta.periodRanges[period]}</span>
             <span className="btnsolid">Export Report</span>
           </div>
         </div>
@@ -192,11 +188,13 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group }: DashboardShellP
           ) : null}
 
           {tab === "group" ? <GroupSection group={group} /> : null}
-          {tab === "about" ? <AboutSection /> : null}
+          {tab === "about" ? (
+            <AboutSection lastUpdatedLabel={refreshMeta.lastUpdatedLabel} />
+          ) : null}
 
           <div className="pagefooter">
             CPF Group Analytics Dashboard — Prototype · Illustrative dummy data for demonstration
-            purposes only · © 2026 CPF Group
+            purposes only · © {new Date().getFullYear()} CPF Group
           </div>
         </div>
       </div>
@@ -246,8 +244,8 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group }: DashboardShellP
         </div>
         <div className="footerbottom">
           <span className="footercopy">
-            © 2026 CPF Group · Prototype dashboard · Illustrative dummy data for demonstration
-            purposes only
+            © {new Date().getFullYear()} CPF Group · Prototype dashboard · Illustrative dummy data
+            for demonstration purposes only
           </span>
           <span className="footerstack">Built with Next.js · Supabase · Python · Vercel</span>
         </div>

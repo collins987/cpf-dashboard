@@ -5,6 +5,7 @@ import { getRukishaView } from "@/lib/orchestration/rukisha";
 import { getCpfFinancialServicesView } from "@/lib/orchestration/cpf-financial-services";
 import { getCpfCapitalAdvisoryView } from "@/lib/orchestration/cpf-capital-advisory";
 import { getGroupView } from "@/lib/orchestration/group";
+import { buildRefreshMeta } from "@/lib/orchestration/refresh-meta";
 
 /**
  * The Orchestration layer's entry point for this route: fetches/computes
@@ -24,7 +25,15 @@ export default async function Home() {
     cpfca: cpfca.totals,
   });
 
+  const refreshMeta = buildRefreshMeta();
+
   return (
-    <DashboardShell rukisha={rukisha.view} cpffs={cpffs.view} cpfca={cpfca.view} group={group} />
+    <DashboardShell
+      rukisha={rukisha.view}
+      cpffs={cpffs.view}
+      cpfca={cpfca.view}
+      group={group}
+      refreshMeta={refreshMeta}
+    />
   );
 }
