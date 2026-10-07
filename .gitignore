@@ -46,3 +46,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# playwright artifacts
+/playwright-report/
+/test-results/
