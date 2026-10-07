@@ -10,24 +10,13 @@ type QueryBuilder = any;
  * type, so a raw Supabase/Postgres error (or row shape) never reaches the
  * Orchestration layer — only a typed DataAccessError or typed rows do.
  */
-// PostgREST caps every SELECT at 1000 rows by default. Explicitly request a
-// larger range so small-but->1000-row tables (loan_account at 1200, etc.) come
-// back in one request. All tables in this project are well under this cap.
-const MAX_ROWS = 50000;
-
 export async function runSelect<T>(
   table: string,
-
   build: (query: QueryBuilder) => QueryBuilder,
   mapRow: (row: Record<string, unknown>) => T,
 ): Promise<T[]> {
   const client = getSupabaseClient();
-  const { data, error } = await build(
-    client
-      .from(table)
-      .select("*")
-      .range(0, MAX_ROWS - 1),
-  );
+  const { data, error } = await build(client.from(table).select("*"));
   if (error) {
     throw new DataAccessError(`Failed to fetch from "${table}"`, error);
   }
