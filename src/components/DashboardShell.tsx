@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { MenuIcon, BellIcon, SearchIcon } from "./icons";
 import { PillarSection } from "./PillarSection";
@@ -55,7 +55,19 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
   const [tab, setTab] = useState<TabId>("rukisha");
   const [navOpen, setNavOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
-  const [period, setPeriod] = useState<Period>("MoM");
+  const bellRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!alertsOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+        setAlertsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [alertsOpen]);
+  const [period, setPeriod] = useState<Period>("YTD");
 
   const goTo = (next: TabId) => {
     setTab(next);
@@ -118,6 +130,7 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
               <MenuIcon />
             </button>
             <button
+              ref={bellRef}
               className="bellbtn"
               onClick={() => setAlertsOpen((v) => !v)}
               aria-label="Alerts"

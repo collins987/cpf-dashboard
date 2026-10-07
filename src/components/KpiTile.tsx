@@ -8,7 +8,12 @@ interface KpiTileProps {
 
 /** One KPI as an individual, responsive card — with an info tooltip showing how it's calculated. */
 export function KpiTile({ kpi, calculation }: KpiTileProps) {
-  const deltaClass = kpi.deltaDirection === "down" ? "deltaDown" : "deltaUp";
+  const deltaClass =
+    kpi.deltaDirection === "down"
+      ? "deltaDown"
+      : kpi.deltaDirection === "flat"
+        ? "deltaFlat"
+        : "deltaUp";
   return (
     <div className="card">
       <div className="tilehead">
