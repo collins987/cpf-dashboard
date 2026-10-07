@@ -79,6 +79,7 @@ export async function getGroupView(args: {
   const totalTransactionValue = calculateGroupTransactionValue([
     rukisha.transactionValue ?? 0,
     cpffs.transactionValue ?? 0,
+    cpfca.transactionValue ?? 0,
   ]);
 
   const scorecard = [

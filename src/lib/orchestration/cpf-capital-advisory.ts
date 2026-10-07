@@ -184,6 +184,7 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
   const totals: SubsidiaryTotals = {
     headlineAum: reitAum + dealValue + issuanceValue,
     activeClients: unitHolders,
+    transactionValue: dealValue + issuanceValue,
   };
 
   return { view, totals };
