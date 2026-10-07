@@ -43,6 +43,8 @@ export interface SnapshotCard {
   headlineAum: string;
   activeClients: string;
   deltaLabel: string;
+  headlineAumCalc: string;
+  activeClientsCalc: string;
 }
 
 export interface FlowCard {

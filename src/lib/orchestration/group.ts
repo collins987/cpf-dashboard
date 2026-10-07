@@ -23,6 +23,8 @@ export async function getGroupView(args: {
       headlineAum: formatKes(rukisha.headlineAum),
       activeClients: formatNumber(rukisha.activeClients),
       deltaLabel: "▲ 6.8% avg growth",
+      headlineAumCalc: "Portfolio Value + Goal-Based Savings + Pension-Linked Savings.",
+      activeClientsCalc: "Active wallets with ≥1 transaction this period.",
     },
     {
       name: "CPF Financial Services",
@@ -30,6 +32,8 @@ export async function getGroupView(args: {
       headlineAum: formatKes(cpffs.headlineAum),
       activeClients: formatNumber(cpffs.activeClients),
       deltaLabel: "▲ 3.7% avg growth",
+      headlineAumCalc: "Fund Balance + Assets Under Administration (Trust).",
+      activeClientsCalc: "Distinct members in active pension schemes.",
     },
     {
       name: "CPF Capital & Advisory",
@@ -37,6 +41,8 @@ export async function getGroupView(args: {
       headlineAum: formatKes(cpfca.headlineAum),
       activeClients: formatNumber(cpfca.activeClients),
       deltaLabel: "▲ 8.7% avg growth",
+      headlineAumCalc: "AUM in REIT Vehicles + Deal Value (YTD) + Issuance Value (YTD).",
+      activeClientsCalc: "Distinct REIT unit holders.",
     },
   ];
 

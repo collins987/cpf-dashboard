@@ -35,13 +35,25 @@ export function GroupSection({ group }: { group: GroupView }) {
             </div>
             <div className="snapgrid">
               <div className="snapcol">
-                <span className="tilelabel">Headline AUM</span>
+                <div className="tilelabelgroup">
+                  <span className="tilelabel">Headline AUM</span>
+                  <span className="infobtn" tabIndex={0}>
+                    <InfoIcon />
+                    <span className="infotip">{s.headlineAumCalc}</span>
+                  </span>
+                </div>
                 <span className="tilevalue serif" style={{ fontSize: 22 }}>
                   {s.headlineAum}
                 </span>
               </div>
               <div className="snapcol">
-                <span className="tilelabel">Active Clients</span>
+                <div className="tilelabelgroup">
+                  <span className="tilelabel">Active Clients</span>
+                  <span className="infobtn" tabIndex={0}>
+                    <InfoIcon />
+                    <span className="infotip">{s.activeClientsCalc}</span>
+                  </span>
+                </div>
                 <span className="tilevalue serif" style={{ fontSize: 22 }}>
                   {s.activeClients}
                 </span>
