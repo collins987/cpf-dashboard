@@ -533,11 +533,16 @@ def load_to_postgres(tables: dict[str, pd.DataFrame], database_url: str | None =
 
 
 if __name__ == "__main__":
+    dry_run = "--dry-run" in sys.argv
+
     data = generate_all()
 
     if not validate_tables(data):
         print("ABORTING: one or more tables exceed MAX_ROWS_PER_TABLE.")
         sys.exit(1)
 
-    load_to_postgres(data)
-    print("Seed complete.")
+    if dry_run:
+        print("Dry run — skipping database load.")
+    else:
+        load_to_postgres(data)
+        print("Seed complete.")
