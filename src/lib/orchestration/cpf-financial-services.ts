@@ -23,7 +23,7 @@ import {
   getAgencyTransactions,
   getFeeLedger,
 } from "@/lib/data/cpf-financial-services-queries";
-import { formatKes, formatNumber, formatPercent } from "@/lib/format";
+import { formatKes, formatKesExact, formatNumber, formatPercent } from "@/lib/format";
 import { syntheticTrend } from "./trend";
 import type { SubsidiaryView, SubsidiaryTotals } from "./view-models";
 
@@ -85,12 +85,14 @@ export async function getCpfFinancialServicesView(): Promise<{
           {
             label: "Member Contributions (period)",
             value: formatKes(memberContributions),
+            exactValue: formatKesExact(memberContributions),
             deltaLabel: "▲ 4.0% QoQ",
             deltaDirection: "up",
           },
           {
             label: "Fund Balance",
             value: formatKes(fundBalance),
+            exactValue: formatKesExact(fundBalance),
             deltaLabel: "▲ 3.4% QoQ",
             deltaDirection: "up",
           },
@@ -108,7 +110,7 @@ export async function getCpfFinancialServicesView(): Promise<{
           },
         ],
         trend: {
-          label: "Fund Balance Trend (KES Bn)",
+          label: "Fund Balance Trend (KES B)",
           color: "cpffs",
           points: syntheticTrend(21),
           monthLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
@@ -121,6 +123,7 @@ export async function getCpfFinancialServicesView(): Promise<{
           {
             label: "Assets Under Administration",
             value: formatKes(aua),
+            exactValue: formatKesExact(aua),
             deltaLabel: "▲ 2.8% QoQ",
             deltaDirection: "up",
           },
@@ -144,7 +147,7 @@ export async function getCpfFinancialServicesView(): Promise<{
           },
         ],
         trend: {
-          label: "Assets Under Administration Trend (KES Bn)",
+          label: "Assets Under Administration Trend (KES B)",
           color: "cpffs",
           points: syntheticTrend(22),
           monthLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
@@ -157,6 +160,7 @@ export async function getCpfFinancialServicesView(): Promise<{
           {
             label: "Agency Transaction Value",
             value: formatKes(agencyValue),
+            exactValue: formatKesExact(agencyValue),
             deltaLabel: "▲ 6.0% QoQ",
             deltaDirection: "up",
           },
@@ -175,6 +179,7 @@ export async function getCpfFinancialServicesView(): Promise<{
           {
             label: "Agency Fee Income",
             value: formatKes(agencyFeeIncome),
+            exactValue: formatKesExact(agencyFeeIncome),
             deltaLabel: "▲ 5.3% QoQ",
             deltaDirection: "up",
           },

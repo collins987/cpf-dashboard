@@ -2,8 +2,8 @@
 
 export function formatKes(value: number): string {
   const abs = Math.abs(value);
-  if (abs >= 1_000_000_000) return `KES ${(value / 1_000_000_000).toFixed(1)}Bn`;
-  if (abs >= 1_000_000) return `KES ${(value / 1_000_000).toFixed(0)}M`;
+  if (abs >= 1_000_000_000) return `KES ${(value / 1_000_000_000).toFixed(2)}B`;
+  if (abs >= 1_000_000) return `KES ${(value / 1_000_000).toFixed(2)}M`;
   return `KES ${Math.round(value).toLocaleString()}`;
 }
 

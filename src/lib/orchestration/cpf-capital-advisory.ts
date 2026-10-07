@@ -19,7 +19,7 @@ import {
   getDealsYtd,
   getIssuancesYtd,
 } from "@/lib/data/cpf-capital-advisory-queries";
-import { formatKes, formatNumber, formatPercent } from "@/lib/format";
+import { formatKes, formatKesExact, formatNumber, formatPercent } from "@/lib/format";
 import { syntheticTrend } from "./trend";
 import type { SubsidiaryView, SubsidiaryTotals, BulletRow } from "./view-models";
 
@@ -80,6 +80,7 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
           {
             label: "AUM in REIT Vehicles",
             value: formatKes(reitAum),
+            exactValue: formatKesExact(reitAum),
             deltaLabel: "▲ 7.9% (6-mo)",
             deltaDirection: "up",
           },
@@ -122,6 +123,7 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
           {
             label: "Deal Value (YTD)",
             value: formatKes(dealValue),
+            exactValue: formatKesExact(dealValue),
             deltaLabel: "▲ 12.4% YTD",
             deltaDirection: "up",
             note: "Incl. Talanta Stadium-type structured deals",
@@ -129,18 +131,20 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
           {
             label: "Average Deal Size",
             value: averageDealSize === null ? "N/A" : formatKes(averageDealSize),
+            exactValue: averageDealSize === null ? undefined : formatKesExact(averageDealSize),
             deltaLabel: "▲ 8.1% YTD",
             deltaDirection: "up",
           },
           {
             label: "Advisory Fee Income",
             value: formatKes(advisoryFeeIncome),
+            exactValue: formatKesExact(advisoryFeeIncome),
             deltaLabel: "▲ 9.0% YTD",
             deltaDirection: "up",
           },
         ],
         trend: {
-          label: "Cumulative Deal Value YTD (KES Bn)",
+          label: "Cumulative Deal Value YTD (KES B)",
           color: "cpfca",
           points: syntheticTrend(32),
           monthLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
@@ -159,6 +163,7 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
           {
             label: "Issuance Value (YTD)",
             value: formatKes(issuanceValue),
+            exactValue: formatKesExact(issuanceValue),
             deltaLabel: "▲ 15.0% YTD",
             deltaDirection: "up",
             note: "Incl. Linzi Sukuk KDF Housing",
