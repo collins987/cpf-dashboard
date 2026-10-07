@@ -6,8 +6,10 @@ import {
   UsersIcon,
   TrendIcon,
   LayersIcon,
+  InfoIcon,
 } from "./icons";
 import { SUBSIDIARY_COLORS } from "./colors";
+import { KPI_CALCULATIONS } from "./kpi-calculations";
 import type { GroupView } from "@/lib/orchestration/view-models";
 
 const SCORE_ICONS = [GridIcon, UsersIcon, TrendIcon, LayersIcon];
@@ -90,7 +92,13 @@ export function GroupSection({ group }: { group: GroupView }) {
           return (
             <div className="scorecard" key={tile.label}>
               <div className="scorehead">
-                <span className="scorelabel">{tile.label}</span>
+                <div className="scorelabelgroup">
+                  <span className="scorelabel">{tile.label}</span>
+                  <span className="infobtn" tabIndex={0}>
+                    <InfoIcon />
+                    <span className="infotip">{KPI_CALCULATIONS[tile.label] ?? ""}</span>
+                  </span>
+                </div>
                 <div className="scoreicon">
                   <Icon />
                 </div>

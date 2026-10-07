@@ -754,6 +754,28 @@ a {
   justify-content: space-between;
 }
 
+.scorelabelgroup {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.scorecard .infobtn {
+  background: rgba(255, 255, 255, 0.12);
+  color: #8fa3bc;
+}
+
+.scorecard .infotip {
+  background: #ffffff;
+  color: #0f1f35;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+}
+
+.scorecard .infotip::after {
+  border-top-color: #ffffff;
+}
+
 .scoreicon {
   width: 28px;
   height: 28px;

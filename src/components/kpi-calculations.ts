@@ -40,4 +40,13 @@ export const KPI_CALCULATIONS: Record<string, string> = {
   "Issuance Value (YTD)": "Sum of issuance values closed this year.",
   "Weighted Avg. Profit Rate": "Profit rate weighted by issuance value.",
   "Subscription Rate": "Amount subscribed ÷ amount offered, per issuance.",
+
+  "Total Group AUM/AUA":
+    "Sum of Headline AUM across Rukisha, CPF Financial Services, and CPF Capital & Advisory.",
+  "Total Active Clients":
+    "Sum of Active Clients (wallets, members, unit holders) across all three subsidiaries. Not deduplicated.",
+  "Group Transaction/Deal Value":
+    "Transaction Value [Rukisha] + Member Contributions [CPF FS] + Agency Transaction Value [CPF FS] + Deal Value [CPF C&A] + Issuance Value [CPF C&A].",
+  "Business Lines":
+    "Constant = 3: Rukisha (digital financial services), CPF Financial Services (pensions, trust & agency), CPF Capital & Advisory (capital markets).",
 };
