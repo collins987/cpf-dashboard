@@ -5,3 +5,6 @@ build
 public
 *.lock
 package-lock.json
+playwright-report
+test-results
+coverage

@@ -454,16 +454,21 @@ test.describe("12. Visual regression sanity", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Data-dependent assertions — SKIPPED by default (require verified Supabase state)
+// Financial sanity — Supabase reseeded under ≤900 rows/table strategy (Phase 6)
+// Expected value is INDEPENDENT of the production calc path: it is the known
+// seeded Rukisha Portfolio Value, taken from the Phase 5 acceptance evidence
+// ("Rukisha Portfolio Value ≈ KES 164.74M"), not computed from calculations/.
+// A defect in the production calc path would therefore surface as a mismatch,
+// not be masked.
 // ---------------------------------------------------------------------------
 
-test.describe("Financial sanity (requires reseeded Supabase ≤900 rows/table)", () => {
-  test.skip("Rukisha Portfolio Value ≈ KES 164.74M — enable once DB is verified", async ({
-    page,
-  }) => {
+const EXPECTED_RUKISHA_PORTFOLIO_VALUE = /KES\s*164\.74\s*M/;
+
+test.describe("Financial sanity (reseeded Supabase)", () => {
+  test("Rukisha Portfolio Value matches the independently seeded expectation", async ({ page }) => {
     await page.goto("/");
     await expect(
       page.locator(".tilegrid .card", { hasText: "Portfolio Value" }).locator(".tilevalue"),
-    ).toContainText("164.74");
+    ).toHaveText(EXPECTED_RUKISHA_PORTFOLIO_VALUE);
   });
 });
