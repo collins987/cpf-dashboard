@@ -16,6 +16,10 @@ export function formatPercent(value: number | null, decimals = 1): string {
   return `${(value * 100).toFixed(decimals)}%`;
 }
 
+export function formatKesExact(value: number): string {
+  return `KES ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 export function formatPercentPoint(value: number | null, decimals = 1): string {
   if (value === null) return "N/A";
   return `${(value * 100).toFixed(decimals)}pp`;

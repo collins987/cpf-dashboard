@@ -21,7 +21,7 @@ import {
   getTransactions,
   getSavingsAccounts,
 } from "@/lib/data/rukisha-queries";
-import { formatKes, formatNumber, formatPercent } from "@/lib/format";
+import { formatKes, formatKesExact, formatNumber, formatPercent } from "@/lib/format";
 import { syntheticTrend } from "./trend";
 import type { SubsidiaryView, SubsidiaryTotals } from "./view-models";
 
@@ -75,6 +75,7 @@ export async function getRukishaView(): Promise<{
           {
             label: "Portfolio Value",
             value: formatKes(portfolioValue),
+            exactValue: formatKesExact(portfolioValue),
             deltaLabel: "▲ 6.2% MoM",
             deltaDirection: "up",
           },
@@ -118,6 +119,7 @@ export async function getRukishaView(): Promise<{
           {
             label: "Transaction Value",
             value: formatKes(transactionValue),
+            exactValue: formatKesExact(transactionValue),
             deltaLabel: "▲ 5.7% MoM",
             deltaDirection: "up",
           },
@@ -130,6 +132,8 @@ export async function getRukishaView(): Promise<{
           {
             label: "Avg. Transaction Size",
             value: avgTransactionSize === null ? "N/A" : formatKes(avgTransactionSize),
+            exactValue:
+              avgTransactionSize === null ? undefined : formatKesExact(avgTransactionSize),
             deltaLabel: "▲ 1.1% MoM",
             deltaDirection: "up",
           },
@@ -148,12 +152,14 @@ export async function getRukishaView(): Promise<{
           {
             label: "Goal-Based Savings",
             value: formatKes(goalBased),
+            exactValue: formatKesExact(goalBased),
             deltaLabel: "▲ 9.1% MoM",
             deltaDirection: "up",
           },
           {
             label: "Pension-Linked Savings",
             value: formatKes(pensionLinked.total),
+            exactValue: formatKesExact(pensionLinked.total),
             deltaLabel: "▲ 11.4% MoM",
             deltaDirection: "up",
             note: `${formatNumber(pensionLinked.contributors)} contributors`,

@@ -473,6 +473,15 @@ a {
   border-top-color: #0f1f35;
 }
 
+.infotip-exact {
+  display: block;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
 .iconbadge {
   width: 26px;
   height: 26px;
@@ -774,6 +783,10 @@ a {
 
 .scorecard .infotip::after {
   border-top-color: #ffffff;
+}
+
+.scorecard .infotip-exact {
+  border-top-color: rgba(15, 31, 53, 0.15);
 }
 
 .scoreicon {

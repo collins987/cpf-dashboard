@@ -16,7 +16,15 @@ export function KpiTile({ kpi, calculation }: KpiTileProps) {
           <span className="tilelabel">{kpi.label}</span>
           <span className="infobtn" tabIndex={0}>
             <InfoIcon />
-            <span className="infotip">{calculation}</span>
+            <span className="infotip">
+              {calculation}
+              {kpi.exactValue ? (
+                <>
+                  <br />
+                  <span className="infotip-exact">{kpi.exactValue}</span>
+                </>
+              ) : null}
+            </span>
           </span>
         </div>
         <div className="iconbadge">

@@ -6,6 +6,7 @@ export interface Kpi {
   deltaLabel: string;
   deltaDirection: "up" | "down" | "flat";
   note?: string;
+  exactValue?: string;
 }
 
 export interface TrendSeries {
