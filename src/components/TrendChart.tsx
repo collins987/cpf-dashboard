@@ -7,7 +7,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ReferenceLine,
+  ReferenceArea,
   ResponsiveContainer,
 } from "recharts";
 import { SUBSIDIARY_COLORS } from "./colors";
@@ -88,20 +88,36 @@ export function TrendChart({ series }: TrendChartProps) {
             labelStyle={{ color: "#374151", fontWeight: 600 }}
             cursor={{ stroke: color.hex, strokeWidth: 1, strokeDasharray: "4 2" }}
           />
-          {series.quarterBoundaryLabel && (
-            <ReferenceLine
-              x={series.quarterBoundaryLabel}
-              stroke="#D1D5DB"
-              strokeWidth={1}
-              strokeDasharray="4 3"
-              label={{
-                value: "↑ New Q",
-                position: "insideTopLeft",
-                fontSize: 9,
-                fill: "#9AA3AE",
-                fontFamily: "inherit",
-              }}
-            />
+          {series.quarterBoundaryLabel && data.length >= 2 && (
+            <>
+              {/* Shade the prior-quarter region (all buckets before the boundary) */}
+              <ReferenceArea
+                x1={data[0].name}
+                x2={data[data.length - 2].name}
+                fill="#F3F4F6"
+                fillOpacity={0.6}
+                label={{
+                  value: "◀ Prior Q",
+                  position: "insideTopLeft",
+                  fontSize: 9,
+                  fill: "#6B7280",
+                  fontFamily: "inherit",
+                }}
+              />
+              {/* Label the current-quarter region */}
+              <ReferenceArea
+                x1={series.quarterBoundaryLabel}
+                x2={series.quarterBoundaryLabel}
+                label={{
+                  value: "Current Q ▶",
+                  position: "insideTopRight",
+                  fontSize: 9,
+                  fill: "#6B7280",
+                  fontFamily: "inherit",
+                }}
+                fill="transparent"
+              />
+            </>
           )}
           <Area
             type="monotone"
