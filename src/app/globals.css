@@ -1118,4 +1118,185 @@ a {
   .bulletname {
     font-size: 11px;
   }
+
+  .profilepanel,
+  .searchresults {
+    right: -18px;
+  }
+}
+
+/* ===========================================================================
+   Phase 5 Extended UI Enhancements — Service Dropdown, Profile popover,
+   functional Search, delta arrow icons.
+   =========================================================================== */
+
+.servicedropdown {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.servicedropdownlabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5b6472;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.servicedropdownwrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.servicedropdownselect {
+  appearance: none;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 32px 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f1f35;
+  cursor: pointer;
+  font-family: var(--font-body), sans-serif;
+}
+
+.servicedropdownchev {
+  position: absolute;
+  right: 8px;
+  pointer-events: none;
+  width: 14px;
+  height: 14px;
+}
+
+.profilewrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.avatarbtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+}
+
+.profilepanel {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 46px;
+  width: 220px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  z-index: 50;
+  text-align: left;
+  padding: 14px 16px;
+}
+
+.profilepanel.open {
+  display: block;
+}
+
+.profilename {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f1f35;
+}
+
+.profileemail {
+  font-size: 11px;
+  color: #8b93a1;
+  margin-top: 2px;
+}
+
+.profiledivider {
+  height: 1px;
+  background: #eef0f3;
+  margin: 10px 0;
+}
+
+.profilerow {
+  font-size: 13px;
+  color: #3a4150;
+  padding: 6px 0;
+}
+
+.profilerow-disabled {
+  color: #c3cedb;
+  cursor: not-allowed;
+}
+
+.searchwrap {
+  position: relative;
+  flex: 1 1 220px;
+  max-width: 300px;
+}
+
+.searchinput {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  color: #3a4150;
+  width: 100%;
+  font-family: var(--font-body), sans-serif;
+}
+
+.searchinput::placeholder {
+  color: #8b93a1;
+}
+
+.searchresults {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  width: 100%;
+  min-width: 260px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.searchresultitem {
+  display: block;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #3a4150;
+  text-decoration: none;
+  border-bottom: 1px solid #f1f3f6;
+}
+
+.searchresultitem:last-child {
+  border-bottom: none;
+}
+
+.searchresultitem:hover {
+  background: #f7f8fa;
+}
+
+.searchresultitem-static {
+  color: #5b6472;
+  cursor: default;
+}
+
+.searchempty {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #8b93a1;
+}
+
+.deltaUp svg,
+.deltaDown svg,
+.deltaFlat svg {
+  flex: 0 0 auto;
 }
