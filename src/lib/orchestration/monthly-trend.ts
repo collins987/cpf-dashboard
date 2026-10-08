@@ -153,7 +153,7 @@ export function buildMonthlyTrend<T>(
       const priorMonthAbbrs = [0, 1, 2].map(
         (i) => `${MONTH_ABBR[priorQStartMonth + i]} ${priorYear}`,
       );
-      const curMonthLabel = `${FULL_MONTHS[now.getUTCMonth()]} ${curYear} (MTD)`;
+      const curMonthLabel = `${MONTH_ABBR[now.getUTCMonth()]} ${curYear}`;
 
       const priorEnd = new Date(Date.UTC(priorYear, priorQEndMonth + 1, 0, 23, 59, 59));
       const priorRaw = [0, 1, 2].map((i) => {
@@ -186,7 +186,10 @@ export function buildMonthlyTrend<T>(
           rawValues: curRaw,
           monthLabels: [curMonthLabel],
           title: `${curQLabel} — Current Quarter`,
-          dateRangeLabel: `${FULL_MONTHS[curQStartMonth].slice(0, 3)} 1 – ${FULL_MONTHS[now.getUTCMonth()].slice(0, 3)} ${now.getUTCDate()}, ${curYear} (${now.getUTCDate()} day${now.getUTCDate() === 1 ? "" : "s"} in)`,
+          dateRangeLabel: `${FULL_MONTHS[curQStartMonth].slice(0, 3)} 1 – ${FULL_MONTHS[now.getUTCMonth()].slice(0, 3)} ${now.getUTCDate()}, ${curYear}`,
+          allQuarterMonthLabels: [0, 1, 2].map(
+            (i) => `${MONTH_ABBR[curQStartMonth + i]} ${curYear}`,
+          ),
         },
       };
       void priorStart; // used above implicitly via priorYear/month

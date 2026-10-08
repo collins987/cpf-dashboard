@@ -38,6 +38,7 @@ interface HalfChartProps {
   gradientId: string;
   yDomain: [number, number];
   metricLabel: string;
+  padToMonths?: string[];
 }
 
 function HalfChart({
@@ -47,11 +48,21 @@ function HalfChart({
   gradientId,
   yDomain,
   metricLabel,
+  padToMonths,
 }: HalfChartProps) {
-  const data = side.rawValues.map((v, i) => ({
+  const real = side.rawValues.map((v, i) => ({
     name: side.monthLabels[i] ?? `${i + 1}`,
     value: v,
   }));
+
+  // Pad remaining quarter months with null so Oct anchors left and the
+  // axis spans the full quarter — as more months pass they fill in naturally.
+  const realNames = new Set(real.map((d) => d.name));
+  const padding = (padToMonths ?? [])
+    .filter((m) => !realNames.has(m))
+    .map((m) => ({ name: m, value: null as unknown as number }));
+
+  const data = [...real, ...padding];
 
   return (
     <div className="card chartcard qoqhalfcard">
@@ -104,6 +115,7 @@ function HalfChart({
             dot={{ r: 4, fill: "#fff", stroke: colorHex, strokeWidth: 2 }}
             activeDot={{ r: 6, fill: colorHex, stroke: "#fff", strokeWidth: 2 }}
             isAnimationActive={false}
+            connectNulls={false}
           >
             <LabelList
               dataKey="value"
@@ -133,7 +145,10 @@ export function QoQTrendChart({ series }: QoQTrendChartProps) {
   const dataMax = Math.max(...allValues, 1);
   const yDomain: [number, number] = [0, Math.ceil(dataMax * 1.2)];
 
-  // Prior quarter uses full brand colour; current uses same colour (charts are independent)
+  // The current-quarter chart pads the remaining 2 months with nulls so the
+  // single data point anchors to the left and the axis spans the full quarter.
+  const currentPadMonths = qoqPair.current.allQuarterMonthLabels ?? [];
+
   return (
     <div className="qoqchartpair">
       <HalfChart
@@ -151,6 +166,7 @@ export function QoQTrendChart({ series }: QoQTrendChartProps) {
         gradientId={`qoq-current-${series.color}`}
         yDomain={yDomain}
         metricLabel={series.label}
+        padToMonths={currentPadMonths}
       />
     </div>
   );

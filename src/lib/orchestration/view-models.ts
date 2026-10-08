@@ -14,6 +14,7 @@ export interface QoQChartSide {
   monthLabels: string[];
   title: string; // e.g. "Q3 2026 — Prior Quarter"
   dateRangeLabel: string; // e.g. "Jul 1 – Sep 30, 2026 (Completed)"
+  allQuarterMonthLabels?: string[]; // current-quarter side only: all 3 month labels for X-axis padding
 }
 
 export interface TrendSeries {
