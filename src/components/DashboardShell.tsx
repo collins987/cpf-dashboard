@@ -8,6 +8,7 @@ import { MenuIcon, BellIcon, SearchIcon } from "./icons";
 import { SubsidiaryContent } from "./SubsidiaryContent";
 import { GroupSection } from "./GroupSection";
 import { AboutSection } from "./AboutSection";
+import { searchCatalog } from "./search-catalog";
 import type { SubsidiaryView, GroupView } from "@/lib/orchestration/view-models";
 import type { RefreshMeta } from "@/lib/orchestration/refresh-meta";
 import type { Period } from "@/lib/calculations/period";
@@ -86,13 +87,31 @@ const ALERTS = [
  * redundant "Filters" control was added; there was no pre-existing filter
  * UI in this codebase to leave dead either.
  */
+interface ExportRow {
+  subsidiary: string;
+  service: string;
+  kpi: string;
+  value: string;
+  delta: string;
+  period: Period;
+  note: string;
+}
+
 function buildExportRows(
   active: TabId,
+  period: Period,
   rukisha?: SubsidiaryView,
   cpffs?: SubsidiaryView,
   cpfca?: SubsidiaryView,
   group?: GroupView,
-): { label: string; value: string; note?: string }[] {
+): ExportRow[] {
+  const subsidiaryName: Record<TabId, string> = {
+    rukisha: "Rukisha",
+    cpffs: "CPF Financial Services",
+    cpfca: "CPF Capital & Advisory",
+    group: "Group",
+    about: "About",
+  };
   const view =
     active === "rukisha"
       ? rukisha
@@ -103,10 +122,26 @@ function buildExportRows(
           : undefined;
   if (view)
     return view.pillars.flatMap((p) =>
-      p.kpis.map((k) => ({ label: k.label, value: k.value, note: k.note })),
+      p.kpis.map((k) => ({
+        subsidiary: subsidiaryName[active],
+        service: p.title,
+        kpi: k.label,
+        value: k.value,
+        delta: k.deltaLabel ?? "",
+        period,
+        note: k.note ?? "",
+      })),
     );
   if (active === "group" && group)
-    return group.scorecard.map((s) => ({ label: s.label, value: s.value, note: s.note }));
+    return group.scorecard.map((s) => ({
+      subsidiary: "Group",
+      service: "Group Scorecard",
+      kpi: s.label,
+      value: s.value,
+      delta: "",
+      period,
+      note: s.note ?? "",
+    }));
   return [];
 }
 
@@ -118,11 +153,19 @@ function slugify(tab: TabId): string {
       : tab;
 }
 
-function downloadCsv(filename: string, rows: { label: string; value: string; note?: string }[]) {
-  const header = "Label,Value,Note";
-  const lines = rows.map(
-    (r) =>
-      `"${r.label.replace(/"/g, '""')}","${r.value.replace(/"/g, '""')}","${(r.note ?? "").replace(/"/g, '""')}"`,
+function downloadCsv(filename: string, rows: ExportRow[]) {
+  const header = "Subsidiary,Service,KPI,Value,Delta,Period,Note";
+  const esc = (s: string) => `"${String(s).replace(/"/g, '""')}"`;
+  const lines = rows.map((r) =>
+    [
+      esc(r.subsidiary),
+      esc(r.service),
+      esc(r.kpi),
+      esc(r.value),
+      esc(r.delta),
+      esc(r.period),
+      esc(r.note),
+    ].join(","),
   );
   const csv = [header, ...lines].join("\r\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -168,27 +211,19 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
   }, [alertsOpen, profileOpen, searchQuery]);
 
   const exportRows = useMemo(
-    () => buildExportRows(active, rukisha, cpffs, cpfca, group),
-    [active, rukisha, cpffs, cpfca, group],
+    () => buildExportRows(active, period, rukisha, cpffs, cpfca, group),
+    [active, period, rukisha, cpffs, cpfca, group],
   );
 
-  const navTargets = (Object.keys(ROUTE_FOR_TAB) as TabId[]).map((t) => ({
-    label: TAB_LABELS[t],
-    href: ROUTE_FOR_TAB[t],
-  }));
-  const searchResults = searchQuery.trim()
-    ? [
-        ...navTargets.filter((n) => n.label.toLowerCase().includes(searchQuery.toLowerCase())),
-        ...exportRows
-          .filter((r) => r.label.toLowerCase().includes(searchQuery.toLowerCase()))
-          .map((r) => ({ label: `${r.label} — ${r.value}`, href: null as string | null })),
-      ]
-    : [];
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    return searchCatalog(searchQuery, 10);
+  }, [searchQuery]);
 
   const handleExport = () => {
     if (exportRows.length === 0) return;
     const dateSlug = refreshMeta.lastUpdatedLabel.replace(/\s+/g, "-");
-    downloadCsv(`cpf-${slugify(active)}-${dateSlug}.csv`, exportRows);
+    downloadCsv(`cpf-${slugify(active)}-${period}-${dateSlug}.csv`, exportRows);
   };
 
   const navBtnClass = (id: TabId) => (active === id ? "navbtn active" : "navbtn");
@@ -240,6 +275,8 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
                 key={id}
                 href={ROUTE_FOR_TAB[id]}
                 className={navBtnClass(id)}
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={() => setNavOpen(false)}
               >
                 {TAB_LABELS[id]}
@@ -321,7 +358,7 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
                 <input
                   type="text"
                   className="searchinput"
-                  placeholder="Search KPIs, Rukisha, Group View…"
+                  placeholder="Search KPIs, services, subsidiaries…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -331,46 +368,49 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
                   {searchResults.length === 0 ? (
                     <div className="searchempty">No matches</div>
                   ) : (
-                    searchResults.slice(0, 8).map((r, i) =>
-                      r.href ? (
-                        <Link
-                          key={i}
-                          href={r.href}
-                          className="searchresultitem"
-                          onClick={() => setSearchQuery("")}
-                        >
-                          {r.label}
-                        </Link>
-                      ) : (
-                        <span key={i} className="searchresultitem searchresultitem-static">
-                          {r.label}
-                        </span>
-                      ),
-                    )
+                    searchResults.map((r, i) => (
+                      <Link
+                        key={i}
+                        href={r.route}
+                        className="searchresultitem"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setSearchQuery("")}
+                      >
+                        <span className="searchresulttype">{r.type}</span>
+                        {r.label}
+                      </Link>
+                    ))
                   )}
                 </div>
               ) : null}
             </div>
-            <div className="periodswitch">
-              {(["MoM", "QoQ", "YTD"] as Period[]).map((p) => (
+            {active !== "about" && (
+              <>
+                <div className="periodswitch">
+                  {(["MoM", "QoQ", "YTD"] as Period[]).map((p) => (
+                    <button
+                      key={p}
+                      className={period === p ? "periodbtn active" : "periodbtn"}
+                      onClick={() => setPeriod(p)}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                <span className="btnline">{refreshMeta.periodRanges[period]}</span>
                 <button
-                  key={p}
-                  className={period === p ? "periodbtn active" : "periodbtn"}
-                  onClick={() => setPeriod(p)}
+                  className="btnsolid"
+                  onClick={handleExport}
+                  disabled={exportRows.length === 0}
+                  style={
+                    exportRows.length === 0 ? { opacity: 0.5, cursor: "not-allowed" } : undefined
+                  }
                 >
-                  {p}
+                  Export Report
                 </button>
-              ))}
-            </div>
-            <span className="btnline">{refreshMeta.periodRanges[period]}</span>
-            <button
-              className="btnsolid"
-              onClick={handleExport}
-              disabled={exportRows.length === 0}
-              style={exportRows.length === 0 ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
-            >
-              Export Report
-            </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -426,28 +466,45 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
           <div className="footercols">
             <div className="footercol">
               <span className="footercoltitle">Dashboard</span>
-              <Link className="footerlink" href="/rukisha">
+              <Link
+                className="footerlink"
+                href="/rukisha"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Rukisha
               </Link>
-              <Link className="footerlink" href="/cpf-financial-services">
+              <Link
+                className="footerlink"
+                href="/cpf-financial-services"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 CPF Financial Services
               </Link>
-              <Link className="footerlink" href="/cpf-capital-advisory">
+              <Link
+                className="footerlink"
+                href="/cpf-capital-advisory"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 CPF Capital &amp; Advisory
               </Link>
-              <Link className="footerlink" href="/group">
+              <Link className="footerlink" href="/group" target="_blank" rel="noopener noreferrer">
                 Group View
               </Link>
             </div>
             <div className="footercol">
               <span className="footercoltitle">Resources</span>
-              <Link className="footerlink" href="/about">
+              <Link className="footerlink" href="/about" target="_blank" rel="noopener noreferrer">
                 About this dashboard
               </Link>
               <span style={{ fontSize: 13, color: "#C3CEDB" }}>Data &amp; methodology</span>
-              <button className="footerlink" onClick={handleExport} style={{ cursor: "pointer" }}>
-                Export report
-              </button>
+              {active !== "about" && (
+                <button className="footerlink" onClick={handleExport} style={{ cursor: "pointer" }}>
+                  Export report
+                </button>
+              )}
             </div>
           </div>
         </div>

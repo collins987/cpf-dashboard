@@ -14,17 +14,16 @@ interface SubsidiaryContentProps {
 }
 
 /**
- * Phase 5 Extended UI Enhancement §9.1 — Service Dropdown. Lets the user
- * narrow a subsidiary's view to one pillar instead of scrolling through all
- * of them stacked vertically. Resets to "All" whenever `view` changes
- * identity (i.e. the user navigated to a different subsidiary route).
+ * Service Dropdown — shows one pillar at a time. Defaults to the first
+ * pillar; selection resets when `view` identity changes (new subsidiary).
  */
 export function SubsidiaryContent({ view, colorKey, period }: SubsidiaryContentProps) {
-  const [selected, setSelected] = useState<string>("All");
+  const firstPillar = view.pillars[0]?.title ?? "";
+  const [selected, setSelected] = useState<string>(firstPillar);
 
-  const options = ["All", ...view.pillars.map((p) => p.title)];
-  const visiblePillars =
-    selected === "All" ? view.pillars : view.pillars.filter((p) => p.title === selected);
+  const options = view.pillars.map((p) => p.title);
+  const activeTitle = options.includes(selected) ? selected : firstPillar;
+  const visiblePillars = view.pillars.filter((p) => p.title === activeTitle);
 
   return (
     <>

@@ -36,7 +36,7 @@ export function TrendChart({ series, period }: TrendChartProps) {
           {value}
         </span>
       </div>
-      <svg viewBox="0 0 400 110" width="100%" height={130} style={{ display: "block" }}>
+      <svg viewBox="0 0 400 110" width="100%" height={96} style={{ display: "block" }}>
         <line x1="0" y1="15" x2="400" y2="15" stroke="#F0F1F3" strokeWidth="1" />
         <line x1="0" y1="50" x2="400" y2="50" stroke="#F0F1F3" strokeWidth="1" />
         <line x1="0" y1="85" x2="400" y2="85" stroke="#F0F1F3" strokeWidth="1" />

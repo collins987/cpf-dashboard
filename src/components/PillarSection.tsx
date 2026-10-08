@@ -12,25 +12,41 @@ interface PillarSectionProps {
   period: Period;
 }
 
-/** One pillar: a section title, its KPI tile grid, and its chart (trend or bullet). */
+/** One pillar: section title, KPI tiles beside the chart (if any). */
 export function PillarSection({ pillar, color, period }: PillarSectionProps) {
+  const hasTrend = !!pillar.trend;
   return (
     <>
       <span className="sectiontitle serif">
         <span className="dot" style={{ background: SUBSIDIARY_COLORS[color].hex }} />
         {pillar.title}
       </span>
-      <div className="tilegrid">
-        {pillar.kpis.map((kpi) => (
-          <KpiTile
-            key={kpi.label}
-            kpi={kpi}
-            calculation={KPI_CALCULATIONS[kpi.label] ?? ""}
-            period={period}
-          />
-        ))}
-      </div>
-      {pillar.trend ? <TrendChart series={pillar.trend} period={period} /> : null}
+      {hasTrend ? (
+        <div className="pillarrow">
+          <div className="tilegrid">
+            {pillar.kpis.map((kpi) => (
+              <KpiTile
+                key={kpi.label}
+                kpi={kpi}
+                calculation={KPI_CALCULATIONS[kpi.label] ?? ""}
+                period={period}
+              />
+            ))}
+          </div>
+          <TrendChart series={pillar.trend!} period={period} />
+        </div>
+      ) : (
+        <div className="tilegrid">
+          {pillar.kpis.map((kpi) => (
+            <KpiTile
+              key={kpi.label}
+              kpi={kpi}
+              calculation={KPI_CALCULATIONS[kpi.label] ?? ""}
+              period={period}
+            />
+          ))}
+        </div>
+      )}
       {pillar.bullets ? (
         <BulletChart
           title="Subscription Rate by Issuance"
