@@ -19,14 +19,14 @@ export function PillarSection({ pillar, color }: PillarSectionProps) {
         {pillar.title}
       </span>
       {hasTrend ? (
-        <div className="pillarrow">
+        <>
           <div className="tilegrid">
             {pillar.kpis.map((kpi) => (
               <KpiTile key={kpi.label} kpi={kpi} calculation={KPI_CALCULATIONS[kpi.label] ?? ""} />
             ))}
           </div>
           <TrendChart series={pillar.trend!} />
-        </div>
+        </>
       ) : (
         <div className="tilegrid">
           {pillar.kpis.map((kpi) => (

@@ -1310,31 +1310,10 @@ a {
   margin-right: 7px;
 }
 
-/* Pillar layout: KPI tiles left, chart right (Workstream 7) */
-.pillarrow {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.pillarrow .tilegrid,
-.pillarrow .tilegrid3 {
-  flex: 0 0 58%;
-  min-width: 0;
-}
-
-.pillarrow .chartcard {
-  flex: 1 1 0;
-  min-width: 0;
-  align-self: stretch;
-}
-
-@media (max-width: 900px) {
-  .pillarrow {
-    flex-direction: column;
-  }
-  .pillarrow .tilegrid,
-  .pillarrow .tilegrid3 {
-    flex: 1 1 100%;
-  }
+/* Chart card sits below the KPI tile grid — give it a subtle border to match card styling */
+.chartcard {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }

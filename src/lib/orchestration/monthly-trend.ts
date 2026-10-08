@@ -20,10 +20,16 @@ export interface MonthlyTrendResult {
   /** Real trailing-6-month bucketed totals, scaled 0-100 for the sparkline. */
   points: number[];
   monthLabels: string[];
-  /** Per-period (MoM/QoQ/YTD) title prefix + summary value label + real delta. */
+  /** Per-period (MoM/QoQ/YTD) title prefix + summary value label + real delta + period-scoped chart points. */
   byPeriod: Record<
     Period,
-    { titlePrefix: string; latestValueLabel: string; deltaPct: number | null }
+    {
+      titlePrefix: string;
+      latestValueLabel: string;
+      deltaPct: number | null;
+      points: number[];
+      monthLabels: string[];
+    }
   >;
 }
 
@@ -59,10 +65,54 @@ export function buildMonthlyTrend<T>(
     const w = getPeriodWindow(period, now);
     const current = sumInWindow(rows, dateOf, valueOf, w.start, w.end);
     const prior = sumInWindow(rows, dateOf, valueOf, w.priorStart, w.priorEnd);
+
+    // Build period-scoped chart buckets so the sparkline changes with the filter.
+    // MoM → 4 weekly buckets within the month.
+    // QoQ → 3 monthly buckets (one per month of the quarter).
+    // YTD → one bucket per month from Jan to the current month.
+    let periodBuckets: { start: Date; end: Date; label: string }[];
+    if (period === "MoM") {
+      // Split the month into 4 roughly-equal week-sized slices
+      const msPerSlice = (w.end.getTime() - w.start.getTime()) / 4;
+      periodBuckets = Array.from({ length: 4 }, (_, i) => {
+        const s = new Date(w.start.getTime() + i * msPerSlice);
+        const e = new Date(w.start.getTime() + (i + 1) * msPerSlice - 1);
+        return { start: s, end: e, label: `W${i + 1}` };
+      });
+    } else if (period === "QoQ") {
+      // 3 calendar months spanning the quarter
+      periodBuckets = Array.from({ length: 3 }, (_, i) => {
+        const baseMonth = w.start.getUTCMonth() + i;
+        const y = w.start.getUTCFullYear() + Math.floor(baseMonth / 12);
+        const m = baseMonth % 12;
+        const s = new Date(Date.UTC(y, m, 1));
+        const e = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59));
+        return { start: s, end: e, label: MONTH_ABBR[m] };
+      });
+    } else {
+      // YTD: one bucket per month Jan→current
+      const yearStart = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+      const monthCount = now.getUTCMonth() + 1;
+      periodBuckets = Array.from({ length: monthCount }, (_, i) => {
+        const s = new Date(Date.UTC(now.getUTCFullYear(), i, 1));
+        const e = new Date(Date.UTC(now.getUTCFullYear(), i + 1, 0, 23, 59, 59));
+        return { start: s, end: e, label: MONTH_ABBR[i] };
+      });
+      void yearStart; // suppress unused warning
+    }
+
+    const bucketTotals = periodBuckets.map((b) =>
+      sumInWindow(rows, dateOf, valueOf, b.start, b.end),
+    );
+    const bucketMax = Math.max(...bucketTotals, 1);
+    const periodPoints = bucketTotals.map((t) => Math.round((t / bucketMax) * 100));
+
     byPeriod[period] = {
       titlePrefix: w.label,
       latestValueLabel: formatValue(current),
       deltaPct: periodDeltaPct(current, prior),
+      points: periodPoints,
+      monthLabels: periodBuckets.map((b) => b.label),
     };
   }
 

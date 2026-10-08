@@ -101,6 +101,7 @@ function buildRukishaViewForPeriod(
   const saversDelta = formatPeriodDelta(periodDeltaPct(activeSavers, activeSaversPrior), period);
 
   const txnPeriodData = txnTrend.byPeriod[period];
+  const { points: txnPoints, monthLabels: txnMonthLabels } = txnPeriodData;
 
   const view: SubsidiaryView = {
     tag: "Digital Financial Services",
@@ -140,8 +141,8 @@ function buildRukishaViewForPeriod(
         trend: {
           label: `${w.label} Transaction Value (KES M)`,
           color: "rukisha",
-          points: txnTrend.points,
-          monthLabels: txnTrend.monthLabels,
+          points: txnPoints,
+          monthLabels: txnMonthLabels,
           latestValueLabel: txnPeriodData.latestValueLabel,
         },
       },
@@ -179,8 +180,8 @@ function buildRukishaViewForPeriod(
         trend: {
           label: `${w.label} Transaction Value (KES M)`,
           color: "rukisha",
-          points: txnTrend.points,
-          monthLabels: txnTrend.monthLabels,
+          points: txnPoints,
+          monthLabels: txnMonthLabels,
           latestValueLabel: formatKes(transactionValue),
         },
       },
@@ -218,8 +219,8 @@ function buildRukishaViewForPeriod(
         trend: {
           label: `${w.label} Savings Balance (KES M)`,
           color: "rukisha",
-          points: txnTrend.points,
-          monthLabels: txnTrend.monthLabels,
+          points: txnPoints,
+          monthLabels: txnMonthLabels,
           latestValueLabel: formatKes(goalBased + pensionLinked.total),
         },
       },

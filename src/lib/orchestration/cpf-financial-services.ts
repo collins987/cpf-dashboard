@@ -122,7 +122,9 @@ function buildCpffsViewForPeriod(
   const agencyValueDelta = formatPeriodDelta(periodDeltaPct(agencyValue, agencyValuePrior), period);
 
   const agencyPeriodData = agencyTrend.byPeriod[period];
+  const { points: agencyPoints, monthLabels: agencyMonthLabels } = agencyPeriodData;
   const fundBalancePeriodData = fundBalanceTrend.byPeriod[period];
+  const { points: fundPoints, monthLabels: fundMonthLabels } = fundBalancePeriodData;
 
   const view: SubsidiaryView = {
     tag: "Pensions, Trust & Agency",
@@ -161,8 +163,8 @@ function buildCpffsViewForPeriod(
         trend: {
           label: `${w.label} Fund Balance Trend (KES B)`,
           color: "cpffs",
-          points: fundBalanceTrend.points,
-          monthLabels: fundBalanceTrend.monthLabels,
+          points: fundPoints,
+          monthLabels: fundMonthLabels,
           latestValueLabel: fundBalancePeriodData.latestValueLabel,
         },
       },
@@ -198,8 +200,8 @@ function buildCpffsViewForPeriod(
         trend: {
           label: `${w.label} AUA Trend (KES B)`,
           color: "cpffs",
-          points: fundBalanceTrend.points,
-          monthLabels: fundBalanceTrend.monthLabels,
+          points: fundPoints,
+          monthLabels: fundMonthLabels,
           latestValueLabel: formatKes(aua),
         },
       },
@@ -236,8 +238,8 @@ function buildCpffsViewForPeriod(
         trend: {
           label: `${w.label} Agency Transaction Value (KES M)`,
           color: "cpffs",
-          points: agencyTrend.points,
-          monthLabels: agencyTrend.monthLabels,
+          points: agencyPoints,
+          monthLabels: agencyMonthLabels,
           latestValueLabel: agencyPeriodData.latestValueLabel,
         },
       },
