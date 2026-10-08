@@ -17,6 +17,7 @@ function mapLoanAccount(r: Record<string, unknown>): LoanAccountRow {
     outstandingBalance: Number(r.outstanding_balance),
     daysOverdue: Number(r.days_overdue),
     status: r.status as LoanAccountRow["status"],
+    originationDate: (r.origination_date as string) ?? new Date().toISOString(),
   };
 }
 
@@ -48,6 +49,7 @@ function mapWallet(r: Record<string, unknown>): WalletRow {
     subsidiaryId: r.subsidiary_id as Subsidiary,
     status: r.status as WalletRow["status"],
     lastTransactionAt: (r.last_transaction_at as string) ?? null,
+    openedDate: (r.opened_date as string) ?? new Date().toISOString(),
   };
 }
 
@@ -58,6 +60,7 @@ function mapSavingsAccount(r: Record<string, unknown>): SavingsAccountRow {
     accountHolderId: r.account_holder_id as string,
     savingsType: r.savings_type as SavingsAccountRow["savingsType"],
     balance: Number(r.balance),
+    openedDate: (r.opened_date as string) ?? new Date().toISOString(),
   };
 }
 

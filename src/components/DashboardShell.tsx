@@ -16,14 +16,11 @@ import type { Period } from "@/lib/calculations/period";
 type TabId = "rukisha" | "cpffs" | "cpfca" | "group" | "about";
 
 interface DashboardShellProps {
-  /** Each page fetches and supplies only the view(s) its own route needs —
-   * e.g. /rukisha passes only `rukisha`. Group still needs all three
-   * subsidiaries' totals (unavoidable; see docs/Phase 5 - Development.docx
-   * §9.2), so /group's page fetches all three but only passes `group`. */
-  rukisha?: SubsidiaryView;
-  cpffs?: SubsidiaryView;
-  cpfca?: SubsidiaryView;
-  group?: GroupView;
+  /** Per-period views — server computed once for all 3 periods; shell picks views[period] client-side. */
+  rukishaViews?: Record<Period, SubsidiaryView>;
+  cpffsViews?: Record<Period, SubsidiaryView>;
+  cpfcaViews?: Record<Period, SubsidiaryView>;
+  groupViews?: Record<Period, GroupView>;
   refreshMeta: RefreshMeta;
 }
 
@@ -179,7 +176,13 @@ function downloadCsv(filename: string, rows: ExportRow[]) {
   URL.revokeObjectURL(url);
 }
 
-export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: DashboardShellProps) {
+export function DashboardShell({
+  rukishaViews,
+  cpffsViews,
+  cpfcaViews,
+  groupViews,
+  refreshMeta,
+}: DashboardShellProps) {
   const pathname = usePathname();
   const active: TabId = TAB_FOR_ROUTE[pathname ?? ""] ?? "rukisha";
 
@@ -209,6 +212,11 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [alertsOpen, profileOpen, searchQuery]);
+
+  const rukisha = rukishaViews?.[period];
+  const cpffs = cpffsViews?.[period];
+  const cpfca = cpfcaViews?.[period];
+  const group = groupViews?.[period];
 
   const exportRows = useMemo(
     () => buildExportRows(active, period, rukisha, cpffs, cpfca, group),
@@ -420,7 +428,7 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
               <span className="tag" style={{ color: TAG_COLORS.rukisha }}>
                 {rukisha.tag}
               </span>
-              <SubsidiaryContent view={rukisha} colorKey="rukisha" period={period} />
+              <SubsidiaryContent view={rukisha} colorKey="rukisha" />
             </>
           ) : null}
           {active === "cpffs" && cpffs ? (
@@ -428,7 +436,7 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
               <span className="tag" style={{ color: TAG_COLORS.cpffs }}>
                 {cpffs.tag}
               </span>
-              <SubsidiaryContent view={cpffs} colorKey="cpffs" period={period} />
+              <SubsidiaryContent view={cpffs} colorKey="cpffs" />
             </>
           ) : null}
           {active === "cpfca" && cpfca ? (
@@ -436,7 +444,7 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
               <span className="tag" style={{ color: TAG_COLORS.cpfca }}>
                 {cpfca.tag}
               </span>
-              <SubsidiaryContent view={cpfca} colorKey="cpfca" period={period} />
+              <SubsidiaryContent view={cpfca} colorKey="cpfca" />
             </>
           ) : null}
           {active === "group" && group ? <GroupSection group={group} /> : null}

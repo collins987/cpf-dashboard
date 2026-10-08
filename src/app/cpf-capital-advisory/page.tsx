@@ -5,7 +5,7 @@ import { getCpfCapitalAdvisoryView } from "@/lib/orchestration/cpf-capital-advis
 import { buildRefreshMeta } from "@/lib/orchestration/refresh-meta";
 
 export default async function CpfCapitalAdvisoryPage() {
-  const { view } = await getCpfCapitalAdvisoryView();
+  const { views } = await getCpfCapitalAdvisoryView();
   const refreshMeta = buildRefreshMeta();
-  return <DashboardShell cpfca={view} refreshMeta={refreshMeta} />;
+  return <DashboardShell cpfcaViews={views} refreshMeta={refreshMeta} />;
 }

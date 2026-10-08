@@ -22,63 +22,85 @@ import {
   getSavingsAccounts,
 } from "@/lib/data/rukisha-queries";
 import { formatKes, formatKesExact, formatNumber, formatPercent } from "@/lib/format";
-import { syntheticTrend } from "./trend";
-import { buildMonthlyTrend, buildKpiPeriodDeltas } from "./monthly-trend";
+import { buildMonthlyTrend, formatPeriodDelta } from "./monthly-trend";
+import { getPeriodWindow, periodDeltaPct, asOfWindow, inWindow } from "@/lib/calculations/period";
+import type { Period } from "@/lib/calculations/period";
 import type { SubsidiaryView, SubsidiaryTotals } from "./view-models";
 
-/**
- * Note on deltas: most KPI deltas below ("▲ x% MoM") remain illustrative
- * static placeholders — their backing tables (loan_account, wallet,
- * savings_account) have no date column, so a genuine period-over-period
- * comparison isn't possible without a schema change (deliberately not made —
- * see docs/Phase 5 - Development.docx §9.5/§9.7). Transaction Value IS
- * genuinely dynamic: transaction.createdAt is a real seeded date, so its
- * trend/delta are computed for real via buildMonthlyTrend/buildKpiPeriodDeltas.
- */
+function buildRukishaViewForPeriod(
+  loans: Awaited<ReturnType<typeof getLoanAccounts>>,
+  repayments: Awaited<ReturnType<typeof getRepayments>>,
+  wallets: Awaited<ReturnType<typeof getWallets>>,
+  transactions: Awaited<ReturnType<typeof getTransactions>>,
+  savings: Awaited<ReturnType<typeof getSavingsAccounts>>,
+  txnTrend: ReturnType<typeof buildMonthlyTrend>,
+  period: Period,
+  now: Date,
+): { view: SubsidiaryView; totals: SubsidiaryTotals } {
+  const w = getPeriodWindow(period, now);
 
-export async function getRukishaView(): Promise<{
-  view: SubsidiaryView;
-  totals: SubsidiaryTotals;
-}> {
-  const loans = await getLoanAccounts();
-  const [repayments, wallets, transactions, savings] = await Promise.all([
-    getRepayments(loans.map((l) => l.id)),
-    getWallets(),
-    getTransactions(),
-    getSavingsAccounts(),
-  ]);
+  // Stock metrics: as-of window end
+  const loansAsOf = asOfWindow(loans, (l) => l.originationDate, w.end);
+  const loansAsOfPrior = asOfWindow(loans, (l) => l.originationDate, w.priorEnd);
+  const walletsAsOf = asOfWindow(wallets, (wl) => wl.openedDate, w.end);
+  const walletsAsOfPrior = asOfWindow(wallets, (wl) => wl.openedDate, w.priorEnd);
+  const savingsAsOf = asOfWindow(savings, (s) => s.openedDate, w.end);
+  const savingsAsOfPrior = asOfWindow(savings, (s) => s.openedDate, w.priorEnd);
 
-  const activeLoans = loans.filter((l) => l.status === "active");
-  const portfolioValue = calculatePortfolioValue(loans);
-  const activeBorrowers = calculateActiveBorrowers(loans);
-  const repaymentRate = calculateRepaymentRate(repayments);
-  const defaultRate = calculateDefaultRate(loans);
-  const byProduct = calculateDefaultRateByProduct(loans);
+  // Flow metrics: in-window
+  const txnsPeriod = inWindow(transactions, (t) => t.createdAt, w.start, w.end);
+  const txnsPrior = inWindow(transactions, (t) => t.createdAt, w.priorStart, w.priorEnd);
+  const repaymentsPeriod = inWindow(repayments, (r) => r.dueDate, w.start, w.end);
 
-  const transactionVolume = calculateTransactionVolume(transactions);
-  const transactionValue = calculateTransactionValue(transactions);
-  const activeWallets = calculateActiveWallets(wallets);
-  const avgTransactionSize = calculateAvgTransactionSize(transactions);
+  // KPI values
+  const portfolioValue = calculatePortfolioValue(loansAsOf);
+  const portfolioValuePrior = calculatePortfolioValue(loansAsOfPrior);
+  const activeBorrowers = calculateActiveBorrowers(loansAsOf);
+  const activeBorrowersPrior = calculateActiveBorrowers(loansAsOfPrior);
+  const repaymentRate = calculateRepaymentRate(repaymentsPeriod);
+  const defaultRate = calculateDefaultRate(loansAsOf);
+  const byProduct = calculateDefaultRateByProduct(loansAsOf);
 
-  const goalBased = calculateGoalBasedSavings(savings);
-  const pensionLinked = calculatePensionLinkedSavings(savings);
-  const activeSavers = calculateActiveSavers(savings);
+  const transactionVolume = calculateTransactionVolume(txnsPeriod);
+  const transactionValue = calculateTransactionValue(txnsPeriod);
+  const transactionValuePrior = calculateTransactionValue(txnsPrior);
+  const activeWallets = calculateActiveWallets(walletsAsOf);
+  const activeWalletsPrior = calculateActiveWallets(walletsAsOfPrior);
+  const avgTransactionSize = calculateAvgTransactionSize(txnsPeriod);
+
+  const goalBased = calculateGoalBasedSavings(savingsAsOf);
+  const goalBasedPrior = calculateGoalBasedSavings(savingsAsOfPrior);
+  const pensionLinked = calculatePensionLinkedSavings(savingsAsOf);
+  const pensionLinkedPrior = calculatePensionLinkedSavings(savingsAsOfPrior);
+  const activeSavers = calculateActiveSavers(savingsAsOf);
+  const activeSaversPrior = calculateActiveSavers(savingsAsOfPrior);
   const savingsToLoan = calculateSavingsToLoanRatio(
     goalBased + pensionLinked.total,
     portfolioValue,
   );
 
-  const txnTrend = buildMonthlyTrend(
-    transactions,
-    (t) => t.createdAt,
-    (t) => t.amount,
-    formatKes,
+  // Deltas
+  const portfolioDelta = formatPeriodDelta(
+    periodDeltaPct(portfolioValue, portfolioValuePrior),
+    period,
   );
-  const txnDeltas = buildKpiPeriodDeltas(
-    transactions,
-    (t) => t.createdAt,
-    (t) => t.amount,
+  const borrowersDelta = formatPeriodDelta(
+    periodDeltaPct(activeBorrowers, activeBorrowersPrior),
+    period,
   );
+  const txnValueDelta = formatPeriodDelta(
+    periodDeltaPct(transactionValue, transactionValuePrior),
+    period,
+  );
+  const walletsDelta = formatPeriodDelta(periodDeltaPct(activeWallets, activeWalletsPrior), period);
+  const goalBasedDelta = formatPeriodDelta(periodDeltaPct(goalBased, goalBasedPrior), period);
+  const pensionLinkedDelta = formatPeriodDelta(
+    periodDeltaPct(pensionLinked.total, pensionLinkedPrior.total),
+    period,
+  );
+  const saversDelta = formatPeriodDelta(periodDeltaPct(activeSavers, activeSaversPrior), period);
+
+  const txnPeriodData = txnTrend.byPeriod[period];
 
   const view: SubsidiaryView = {
     tag: "Digital Financial Services",
@@ -92,35 +114,35 @@ export async function getRukishaView(): Promise<{
             label: "Portfolio Value",
             value: formatKes(portfolioValue),
             exactValue: formatKesExact(portfolioValue),
-            deltaLabel: "▲ 6.2% MoM",
-            deltaDirection: "up",
+            deltaLabel: portfolioDelta.deltaLabel,
+            deltaDirection: portfolioDelta.deltaDirection,
           },
           {
             label: "Active Borrowers",
             value: formatNumber(activeBorrowers),
-            deltaLabel: "▲ 2.9% MoM",
-            deltaDirection: "up",
+            deltaLabel: borrowersDelta.deltaLabel,
+            deltaDirection: borrowersDelta.deltaDirection,
           },
           {
             label: "Repayment Rate",
             value: formatPercent(repaymentRate),
-            deltaLabel: "▲ 1.1pp MoM",
-            deltaDirection: "up",
+            deltaLabel: w.label,
+            deltaDirection: "flat",
           },
           {
             label: "Default Rate (Blended)",
             value: formatPercent(defaultRate),
-            deltaLabel: "▼ 0.4pp MoM",
-            deltaDirection: "up",
+            deltaLabel: w.label,
+            deltaDirection: "flat",
             note: `Personal ${formatPercent(byProduct.personal ?? null)} · Business ${formatPercent(byProduct.business ?? null)} · Asset Finance ${formatPercent(byProduct.asset_finance ?? null)}`,
           },
         ],
         trend: {
-          label: "Monthly Disbursements (KES M)",
+          label: `${w.label} Transaction Value (KES M)`,
           color: "rukisha",
-          points: syntheticTrend(11),
-          monthLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-          latestValueLabel: `${formatNumber(activeLoans.length)} loans`,
+          points: txnTrend.points,
+          monthLabels: txnTrend.monthLabels,
+          latestValueLabel: txnPeriodData.latestValueLabel,
         },
       },
       {
@@ -129,52 +151,37 @@ export async function getRukishaView(): Promise<{
           {
             label: "Transaction Volume",
             value: `${formatNumber(transactionVolume)} txns`,
-            deltaLabel: "▲ 8.4% MoM",
-            deltaDirection: "up",
+            deltaLabel: w.label,
+            deltaDirection: "flat",
           },
           {
             label: "Transaction Value",
             value: formatKes(transactionValue),
             exactValue: formatKesExact(transactionValue),
-            deltaLabel: "▲ 5.7% MoM",
-            deltaDirection: "up",
-            byPeriodDelta: txnDeltas,
+            deltaLabel: txnValueDelta.deltaLabel,
+            deltaDirection: txnValueDelta.deltaDirection,
           },
           {
             label: "Active Wallets",
             value: formatNumber(activeWallets),
-            deltaLabel: "▲ 3.2% MoM",
-            deltaDirection: "up",
+            deltaLabel: walletsDelta.deltaLabel,
+            deltaDirection: walletsDelta.deltaDirection,
           },
           {
             label: "Avg. Transaction Size",
             value: avgTransactionSize === null ? "N/A" : formatKes(avgTransactionSize),
             exactValue:
               avgTransactionSize === null ? undefined : formatKesExact(avgTransactionSize),
-            deltaLabel: "▲ 1.1% MoM",
-            deltaDirection: "up",
+            deltaLabel: w.label,
+            deltaDirection: "flat",
           },
         ],
         trend: {
-          label: "Transaction Value (KES M)",
+          label: `${w.label} Transaction Value (KES M)`,
           color: "rukisha",
           points: txnTrend.points,
           monthLabels: txnTrend.monthLabels,
           latestValueLabel: formatKes(transactionValue),
-          byPeriod: {
-            MoM: {
-              titlePrefix: txnTrend.byPeriod.MoM.titlePrefix,
-              latestValueLabel: txnTrend.byPeriod.MoM.latestValueLabel,
-            },
-            QoQ: {
-              titlePrefix: txnTrend.byPeriod.QoQ.titlePrefix,
-              latestValueLabel: txnTrend.byPeriod.QoQ.latestValueLabel,
-            },
-            YTD: {
-              titlePrefix: txnTrend.byPeriod.YTD.titlePrefix,
-              latestValueLabel: txnTrend.byPeriod.YTD.latestValueLabel,
-            },
-          },
         },
       },
       {
@@ -184,35 +191,35 @@ export async function getRukishaView(): Promise<{
             label: "Goal-Based Savings",
             value: formatKes(goalBased),
             exactValue: formatKesExact(goalBased),
-            deltaLabel: "▲ 9.1% MoM",
-            deltaDirection: "up",
+            deltaLabel: goalBasedDelta.deltaLabel,
+            deltaDirection: goalBasedDelta.deltaDirection,
           },
           {
             label: "Pension-Linked Savings",
             value: formatKes(pensionLinked.total),
             exactValue: formatKesExact(pensionLinked.total),
-            deltaLabel: "▲ 11.4% MoM",
-            deltaDirection: "up",
+            deltaLabel: pensionLinkedDelta.deltaLabel,
+            deltaDirection: pensionLinkedDelta.deltaDirection,
             note: `${formatNumber(pensionLinked.contributors)} contributors`,
           },
           {
             label: "Active Savers",
             value: formatNumber(activeSavers),
-            deltaLabel: "▲ 6.5% MoM",
-            deltaDirection: "up",
+            deltaLabel: saversDelta.deltaLabel,
+            deltaDirection: saversDelta.deltaDirection,
           },
           {
             label: "Savings-to-Loan Ratio",
             value: savingsToLoan === null ? "N/A" : savingsToLoan.toFixed(2),
-            deltaLabel: "▲ 0.03 MoM",
-            deltaDirection: "up",
+            deltaLabel: w.label,
+            deltaDirection: "flat",
           },
         ],
         trend: {
-          label: "Combined Savings Balance (KES M)",
+          label: `${w.label} Savings Balance (KES M)`,
           color: "rukisha",
-          points: syntheticTrend(13),
-          monthLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+          points: txnTrend.points,
+          monthLabels: txnTrend.monthLabels,
           latestValueLabel: formatKes(goalBased + pensionLinked.total),
         },
       },
@@ -226,4 +233,45 @@ export async function getRukishaView(): Promise<{
   };
 
   return { view, totals };
+}
+
+export async function getRukishaView(): Promise<{
+  views: Record<Period, SubsidiaryView>;
+  totals: Record<Period, SubsidiaryTotals>;
+}> {
+  const now = new Date();
+  const loans = await getLoanAccounts();
+  const [repayments, wallets, transactions, savings] = await Promise.all([
+    getRepayments(loans.map((l) => l.id)),
+    getWallets(),
+    getTransactions(),
+    getSavingsAccounts(),
+  ]);
+
+  const txnTrend = buildMonthlyTrend(
+    transactions,
+    (t) => t.createdAt,
+    (t) => t.amount,
+    formatKes,
+    now,
+  );
+
+  const views = {} as Record<Period, SubsidiaryView>;
+  const totals = {} as Record<Period, SubsidiaryTotals>;
+  for (const period of ["MoM", "QoQ", "YTD"] as Period[]) {
+    const result = buildRukishaViewForPeriod(
+      loans,
+      repayments,
+      wallets,
+      transactions,
+      savings,
+      txnTrend,
+      period,
+      now,
+    );
+    views[period] = result.view;
+    totals[period] = result.totals;
+  }
+
+  return { views, totals };
 }

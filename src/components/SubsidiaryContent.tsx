@@ -5,19 +5,17 @@ import { PillarSection } from "./PillarSection";
 import { ChevronDownIcon } from "./icons";
 import type { SubsidiaryView } from "@/lib/orchestration/view-models";
 import type { SubsidiaryColorKey } from "./colors";
-import type { Period } from "@/lib/calculations/period";
 
 interface SubsidiaryContentProps {
   view: SubsidiaryView;
   colorKey: SubsidiaryColorKey;
-  period: Period;
 }
 
 /**
  * Service Dropdown — shows one pillar at a time. Defaults to the first
  * pillar; selection resets when `view` identity changes (new subsidiary).
  */
-export function SubsidiaryContent({ view, colorKey, period }: SubsidiaryContentProps) {
+export function SubsidiaryContent({ view, colorKey }: SubsidiaryContentProps) {
   const firstPillar = view.pillars[0]?.title ?? "";
   const [selected, setSelected] = useState<string>(firstPillar);
 
@@ -50,7 +48,7 @@ export function SubsidiaryContent({ view, colorKey, period }: SubsidiaryContentP
         </div>
       ) : null}
       {visiblePillars.map((pillar) => (
-        <PillarSection key={pillar.title} pillar={pillar} color={colorKey} period={period} />
+        <PillarSection key={pillar.title} pillar={pillar} color={colorKey} />
       ))}
     </>
   );

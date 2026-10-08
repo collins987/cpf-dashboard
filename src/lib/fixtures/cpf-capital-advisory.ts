@@ -14,6 +14,7 @@ export const reitHoldings: ReitHoldingRow[] = Array.from({ length: 300 }, () => 
   subsidiaryId: "cpf_capital_advisory",
   holderId: uuid(rand),
   unitBalance: randomFloat(rand, 50, 20_000),
+  acquiredDate: "2025-10-01",
 }));
 
 export const reitNavHistory: ReitNavHistoryRow[] = [

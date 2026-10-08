@@ -60,3 +60,16 @@ export function periodDeltaPct(current: number, prior: number): number | null {
   if (prior === 0) return null;
   return (current - prior) / prior;
 }
+
+/** Rows where dateOf(row) ≤ end — for stock/cumulative metrics (balance, count as-of). */
+export function asOfWindow<T>(rows: T[], dateOf: (row: T) => string, end: Date): T[] {
+  return rows.filter((row) => new Date(dateOf(row)) <= end);
+}
+
+/** Rows where start ≤ dateOf(row) ≤ end — for flow metrics (transactions in period). */
+export function inWindow<T>(rows: T[], dateOf: (row: T) => string, start: Date, end: Date): T[] {
+  return rows.filter((row) => {
+    const d = new Date(dateOf(row));
+    return d >= start && d <= end;
+  });
+}

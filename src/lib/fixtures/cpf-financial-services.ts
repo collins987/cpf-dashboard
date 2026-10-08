@@ -17,6 +17,7 @@ export const pensionSchemes: PensionSchemeRow[] = Array.from({ length: 40 }, () 
   id: uuid(rand),
   subsidiaryId: "cpf_financial_services",
   status: "active",
+  openedDate: "2025-10-01",
 }));
 
 export const schemeMembers: SchemeMemberRow[] = pensionSchemes.flatMap((scheme) =>
@@ -24,6 +25,7 @@ export const schemeMembers: SchemeMemberRow[] = pensionSchemes.flatMap((scheme) 
     id: uuid(rand),
     pensionSchemeId: scheme.id,
     memberId: uuid(rand),
+    joinedDate: "2025-10-01",
   })),
 );
 
@@ -48,6 +50,7 @@ export const trustAccounts: TrustAccountRow[] = Array.from({ length: 58 }, () =>
   subsidiaryId: "cpf_financial_services",
   trustAssetValue: randomFloat(rand, 20_000_000, 400_000_000),
   status: "active",
+  openedDate: "2025-10-01",
 }));
 
 export const trustBeneficiaries: TrustBeneficiaryRow[] = trustAccounts.flatMap((trust) =>
@@ -55,6 +58,7 @@ export const trustBeneficiaries: TrustBeneficiaryRow[] = trustAccounts.flatMap((
     id: uuid(rand),
     trustAccountId: trust.id,
     beneficiaryId: uuid(rand),
+    addedDate: "2025-10-01",
   })),
 );
 
@@ -62,6 +66,7 @@ export const agencyMandates: AgencyMandateRow[] = Array.from({ length: 24 }, () 
   id: uuid(rand),
   subsidiaryId: "cpf_financial_services",
   principalId: uuid(rand),
+  startedDate: "2025-10-01",
 }));
 
 export const agencyTransactions: AgencyTransactionRow[] = agencyMandates.flatMap((mandate) =>

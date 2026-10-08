@@ -5,7 +5,7 @@ import { getCpfFinancialServicesView } from "@/lib/orchestration/cpf-financial-s
 import { buildRefreshMeta } from "@/lib/orchestration/refresh-meta";
 
 export default async function CpfFinancialServicesPage() {
-  const { view } = await getCpfFinancialServicesView();
+  const { views } = await getCpfFinancialServicesView();
   const refreshMeta = buildRefreshMeta();
-  return <DashboardShell cpffs={view} refreshMeta={refreshMeta} />;
+  return <DashboardShell cpffsViews={views} refreshMeta={refreshMeta} />;
 }

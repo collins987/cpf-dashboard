@@ -18,12 +18,14 @@ const mapPensionScheme = (r: Record<string, unknown>): PensionSchemeRow => ({
   id: r.id as string,
   subsidiaryId: r.subsidiary_id as Subsidiary,
   status: r.status as PensionSchemeRow["status"],
+  openedDate: (r.opened_date as string) ?? new Date().toISOString(),
 });
 
 const mapSchemeMember = (r: Record<string, unknown>): SchemeMemberRow => ({
   id: r.id as string,
   pensionSchemeId: r.pension_scheme_id as string,
   memberId: r.member_id as string,
+  joinedDate: (r.joined_date as string) ?? new Date().toISOString(),
 });
 
 const mapContribution = (r: Record<string, unknown>): ContributionRow => ({
@@ -45,18 +47,21 @@ const mapTrustAccount = (r: Record<string, unknown>): TrustAccountRow => ({
   subsidiaryId: r.subsidiary_id as Subsidiary,
   trustAssetValue: Number(r.trust_asset_value),
   status: r.status as TrustAccountRow["status"],
+  openedDate: (r.opened_date as string) ?? new Date().toISOString(),
 });
 
 const mapTrustBeneficiary = (r: Record<string, unknown>): TrustBeneficiaryRow => ({
   id: r.id as string,
   trustAccountId: r.trust_account_id as string,
   beneficiaryId: r.beneficiary_id as string,
+  addedDate: (r.added_date as string) ?? new Date().toISOString(),
 });
 
 const mapAgencyMandate = (r: Record<string, unknown>): AgencyMandateRow => ({
   id: r.id as string,
   subsidiaryId: r.subsidiary_id as Subsidiary,
   principalId: r.principal_id as string,
+  startedDate: (r.started_date as string) ?? new Date().toISOString(),
 });
 
 const mapAgencyTransaction = (r: Record<string, unknown>): AgencyTransactionRow => ({

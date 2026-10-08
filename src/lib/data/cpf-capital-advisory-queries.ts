@@ -15,6 +15,7 @@ const mapReitHolding = (r: Record<string, unknown>): ReitHoldingRow => ({
   subsidiaryId: r.subsidiary_id as Subsidiary,
   holderId: r.holder_id as string,
   unitBalance: Number(r.unit_balance),
+  acquiredDate: (r.acquired_date as string) ?? new Date().toISOString(),
 });
 
 const mapReitNavHistory = (r: Record<string, unknown>): ReitNavHistoryRow => ({
