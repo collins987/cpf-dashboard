@@ -42,11 +42,14 @@ const TAB_FOR_ROUTE: Record<string, TabId> = {
   "/about": "about",
 };
 
+// Navigation-link / search-target label — what the user clicks or types.
+// Kept distinct from the hero/page title below ("Group Comparison View"),
+// which stays the fuller descriptive heading shown once you're on that page.
 const TAB_LABELS: Record<TabId, string> = {
   rukisha: "Rukisha",
   cpffs: "CPF Financial Services",
   cpfca: "CPF Capital & Advisory",
-  group: "Group Comparison View",
+  group: "Group View",
   about: "About",
 };
 
@@ -190,7 +193,12 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
 
   const navBtnClass = (id: TabId) => (active === id ? "navbtn active" : "navbtn");
 
-  const headerTitle = active === "about" ? "About This Dashboard" : TAB_LABELS[active];
+  const headerTitle =
+    active === "about"
+      ? "About This Dashboard"
+      : active === "group"
+        ? "Group Comparison View"
+        : TAB_LABELS[active];
   const activeSubsidiaryView =
     active === "rukisha"
       ? rukisha

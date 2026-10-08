@@ -59,7 +59,7 @@ const ROUTES = [
     navLabel: "CPF Capital & Advisory",
     tag: "Capital Markets & Alternative Investments",
   },
-  { path: "/group", name: "Group Comparison View", navLabel: "Group Comparison View", tag: null },
+  { path: "/group", name: "Group Comparison View", navLabel: "Group View", tag: null },
   // Nav link text is just "About"; the hero title (what `name` is used for
   // elsewhere) is the longer "About This Dashboard" — these are genuinely
   // different strings in the product, not a selector bug.
@@ -76,16 +76,14 @@ test.describe("Routing", () => {
     await expect(page).toHaveURL(/\/rukisha$/);
   });
 
-  test("KNOWN DEFECT: header and footer use inconsistent labels for the Group route", async ({
-    page,
-  }) => {
-    // Pre-refactor, both header nav and footer nav said "Group View"
-    // identically. The Stage-1 routing refactor made the header nav link
-    // use TAB_LABELS.group ("Group Comparison View") while the footer link
-    // and the search placeholder's example text were left at the original
-    // "Group View". This test documents the inconsistency explicitly rather
-    // than silently working around it with a loose selector elsewhere in
-    // this suite. See the acceptance report for the recommended fix.
+  test("header and footer use a consistent label for the Group route", async ({ page }) => {
+    // Regression guard: the Stage-1 routing refactor briefly made the header
+    // nav say "Group Comparison View" while the footer link and the search
+    // placeholder's example text stayed on the original "Group View",
+    // breaking the search-by-placeholder-example flow. Both now read
+    // TAB_LABELS.group ("Group View"); the fuller "Group Comparison View"
+    // wording is kept only for the hero/page title, which is a distinct
+    // element from the nav links this test checks.
     await page.goto("/rukisha");
     const headerLabel = await page
       .locator(".navrow .navbtn")
@@ -126,7 +124,7 @@ test.describe("Routing", () => {
 
   test("browser back/forward preserves correct page content", async ({ page }) => {
     await page.goto("/rukisha");
-    await page.locator(".navrow .navbtn", { hasText: "Group Comparison View" }).click();
+    await page.locator(".navrow .navbtn", { hasText: "Group View" }).click();
     await expect(page).toHaveURL(/\/group$/);
     await page.goBack();
     await expect(page).toHaveURL(/\/rukisha$/);
@@ -180,7 +178,7 @@ test.describe("Service Dropdown", () => {
   test("navigating away and back resets the dropdown to All", async ({ page }) => {
     await page.goto("/rukisha");
     await page.getByLabel("View").selectOption("Savings");
-    await page.locator(".navrow .navbtn", { hasText: "Group Comparison View" }).click();
+    await page.locator(".navrow .navbtn", { hasText: "Group View" }).click();
     await page.waitForURL(/\/group$/);
     await page.locator(".navrow .navbtn", { hasText: "Rukisha" }).click();
     await page.waitForURL(/\/rukisha$/);
