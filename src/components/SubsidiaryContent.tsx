@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { PillarSection } from "./PillarSection";
 import { ChevronDownIcon } from "./icons";
 import type { SubsidiaryView } from "@/lib/orchestration/view-models";
@@ -11,15 +12,14 @@ interface SubsidiaryContentProps {
   colorKey: SubsidiaryColorKey;
 }
 
-/**
- * Service Dropdown — shows one pillar at a time. Defaults to the first
- * pillar; selection resets when `view` identity changes (new subsidiary).
- */
-export function SubsidiaryContent({ view, colorKey }: SubsidiaryContentProps) {
-  const firstPillar = view.pillars[0]?.title ?? "";
-  const [selected, setSelected] = useState<string>(firstPillar);
-
+function SubsidiaryContentInner({ view, colorKey }: SubsidiaryContentProps) {
+  const searchParams = useSearchParams();
+  const requestedService = searchParams.get("service") ?? "";
   const options = view.pillars.map((p) => p.title);
+  const firstPillar = options[0] ?? "";
+  const initial = options.includes(requestedService) ? requestedService : firstPillar;
+
+  const [selected, setSelected] = useState<string>(initial);
   const activeTitle = options.includes(selected) ? selected : firstPillar;
   const visiblePillars = view.pillars.filter((p) => p.title === activeTitle);
 
@@ -51,5 +51,13 @@ export function SubsidiaryContent({ view, colorKey }: SubsidiaryContentProps) {
         <PillarSection key={pillar.title} pillar={pillar} color={colorKey} />
       ))}
     </>
+  );
+}
+
+export function SubsidiaryContent({ view, colorKey }: SubsidiaryContentProps) {
+  return (
+    <Suspense fallback={null}>
+      <SubsidiaryContentInner view={view} colorKey={colorKey} />
+    </Suspense>
   );
 }

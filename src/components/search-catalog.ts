@@ -22,16 +22,44 @@ const SUBSIDIARIES: SearchEntry[] = [
   { label: "About", type: "page", route: ABOUT },
 ];
 
+function serviceRoute(base: string, label: string): string {
+  return `${base}?service=${encodeURIComponent(label)}`;
+}
+
 const SERVICES: SearchEntry[] = [
-  { label: "Lending", type: "service", route: RUKISHA },
-  { label: "Payments & Transfers", type: "service", route: RUKISHA },
-  { label: "Savings", type: "service", route: RUKISHA },
-  { label: "Pension Fund Administration", type: "service", route: CPFFS },
-  { label: "Trust Fund Administration", type: "service", route: CPFFS },
-  { label: "Agency Services", type: "service", route: CPFFS },
-  { label: "Alternative Investments (REITs)", type: "service", route: CPFCA },
-  { label: "Structured & Project Finance Advisory", type: "service", route: CPFCA },
-  { label: "Debt Capital Markets (Sukuk/Bonds)", type: "service", route: CPFCA },
+  { label: "Lending", type: "service", route: serviceRoute(RUKISHA, "Lending") },
+  {
+    label: "Payments & Transfers",
+    type: "service",
+    route: serviceRoute(RUKISHA, "Payments & Transfers"),
+  },
+  { label: "Savings", type: "service", route: serviceRoute(RUKISHA, "Savings") },
+  {
+    label: "Pension Fund Administration",
+    type: "service",
+    route: serviceRoute(CPFFS, "Pension Fund Administration"),
+  },
+  {
+    label: "Trust Fund Administration",
+    type: "service",
+    route: serviceRoute(CPFFS, "Trust Fund Administration"),
+  },
+  { label: "Agency Services", type: "service", route: serviceRoute(CPFFS, "Agency Services") },
+  {
+    label: "Alternative Investments (REITs)",
+    type: "service",
+    route: serviceRoute(CPFCA, "Alternative Investments (REITs)"),
+  },
+  {
+    label: "Structured & Project Finance Advisory",
+    type: "service",
+    route: serviceRoute(CPFCA, "Structured & Project Finance Advisory"),
+  },
+  {
+    label: "Debt Capital Markets (Sukuk/Bonds)",
+    type: "service",
+    route: serviceRoute(CPFCA, "Debt Capital Markets (Sukuk/Bonds)"),
+  },
 ];
 
 const KPI_TO_ROUTE: Record<string, string> = {

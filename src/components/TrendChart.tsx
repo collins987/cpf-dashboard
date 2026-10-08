@@ -1,45 +1,45 @@
+"use client";
+
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { SUBSIDIARY_COLORS } from "./colors";
 import type { TrendSeries } from "@/lib/orchestration/view-models";
-
-// SVG canvas dimensions
-const W = 440;
-const H = 110;
-// Chart area: leave left margin for Y-axis labels, bottom margin for X labels
-const LEFT = 52;
-const RIGHT = W;
-const TOP = 8;
-const BOTTOM = 88;
-const CHART_W = RIGHT - LEFT;
-const CHART_H = BOTTOM - TOP;
-
-function xOf(i: number, n: number): number {
-  if (n <= 1) return LEFT + CHART_W / 2;
-  return LEFT + (i / (n - 1)) * CHART_W;
-}
-
-function yOf(point: number): number {
-  return BOTTOM - (Math.max(0, Math.min(100, point)) / 100) * CHART_H;
-}
 
 interface TrendChartProps {
   series: TrendSeries;
 }
 
+function formatTick(value: number): string {
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return value.toFixed(value % 1 === 0 ? 0 : 2);
+}
+
 export function TrendChart({ series }: TrendChartProps) {
   const color = SUBSIDIARY_COLORS[series.color];
-  const n = series.points.length;
-  const coords = series.points.map((p, i) => [xOf(i, n), yOf(p)] as const);
 
-  const linePoints = coords.map(([x, y]) => `${x},${y}`).join(" ");
-  const lastX = coords[coords.length - 1]?.[0] ?? RIGHT;
-  const areaPoints = `${linePoints} ${lastX},${BOTTOM} ${LEFT},${BOTTOM}`;
+  const data = series.rawValues.map((v, i) => ({
+    name: series.monthLabels[i] ?? `${i + 1}`,
+    value: v,
+  }));
 
-  // Gridline Y positions
-  const gridTop = yOf(100);
-  const gridMid = yOf(50);
-  const gridLow = yOf(0);
+  // Use a tight domain: min slightly below data min, max slightly above data max
+  const values = series.rawValues.filter((v) => v > 0);
+  const dataMin = values.length > 0 ? Math.min(...values) : 0;
+  const dataMax = values.length > 0 ? Math.max(...values) : 1;
+  const padding = (dataMax - dataMin) * 0.15 || dataMax * 0.1 || 1;
+  const yMin = Math.max(0, dataMin - padding);
+  const yMax = dataMax + padding;
 
-  const [topLabel, midLabel] = series.yAxisLabels ?? ["", ""];
+  const gradientId = `gradient-${series.color}`;
 
   return (
     <div className="card chartcard">
@@ -49,103 +49,56 @@ export function TrendChart({ series }: TrendChartProps) {
           {series.latestValueLabel}
         </span>
       </div>
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        width="100%"
-        height={120}
-        style={{ display: "block", overflow: "visible" }}
-      >
-        {/* Gridlines */}
-        <line x1={LEFT} y1={gridTop} x2={RIGHT} y2={gridTop} stroke="#F0F1F3" strokeWidth="1" />
-        <line x1={LEFT} y1={gridMid} x2={RIGHT} y2={gridMid} stroke="#F0F1F3" strokeWidth="1" />
-        <line x1={LEFT} y1={gridLow} x2={RIGHT} y2={gridLow} stroke="#E8EAED" strokeWidth="1" />
-
-        {/* Y-axis labels */}
-        {topLabel && (
-          <text
-            x={LEFT - 6}
-            y={gridTop + 4}
-            textAnchor="end"
-            fontSize="9"
-            fill="#9AA3AE"
-            fontFamily="inherit"
-          >
-            {topLabel}
-          </text>
-        )}
-        {midLabel && (
-          <text
-            x={LEFT - 6}
-            y={gridMid + 4}
-            textAnchor="end"
-            fontSize="9"
-            fill="#9AA3AE"
-            fontFamily="inherit"
-          >
-            {midLabel}
-          </text>
-        )}
-        <text
-          x={LEFT - 6}
-          y={gridLow + 4}
-          textAnchor="end"
-          fontSize="9"
-          fill="#9AA3AE"
-          fontFamily="inherit"
-        >
-          0
-        </text>
-
-        {/* Area fill */}
-        <polygon points={areaPoints} fill={color.rgba} stroke="none" />
-
-        {/* Glow line */}
-        <polyline
-          points={linePoints}
-          fill="none"
-          stroke={color.hex}
-          strokeWidth="6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.10"
-        />
-
-        {/* Main line */}
-        <polyline
-          points={linePoints}
-          fill="none"
-          stroke={color.hex}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* Data point dots */}
-        {coords.map(([x, y], i) =>
-          i === coords.length - 1 ? (
-            <circle key={i} cx={x} cy={y} r="4" fill={color.hex} stroke="#FFFFFF" strokeWidth="2" />
-          ) : (
-            <circle
-              key={i}
-              cx={x}
-              cy={y}
-              r="3"
-              fill="#FFFFFF"
-              stroke={color.hex}
-              strokeWidth="1.5"
-            />
-          ),
-        )}
-      </svg>
-
-      {/* X-axis labels */}
-      <div className="monthrow">
-        {series.monthLabels.map((m) => (
-          <span key={m} className="monthlabel">
-            {m}
-          </span>
-        ))}
-      </div>
+      <ResponsiveContainer width="100%" height={120}>
+        <AreaChart data={data} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={color.hex} stopOpacity={0.18} />
+              <stop offset="95%" stopColor={color.hex} stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="0" stroke="#F0F1F3" vertical={false} />
+          <XAxis
+            dataKey="name"
+            tick={{ fontSize: 10, fill: "#9AA3AE", fontFamily: "inherit" }}
+            axisLine={false}
+            tickLine={false}
+            dy={4}
+          />
+          <YAxis
+            domain={[yMin, yMax]}
+            tickFormatter={formatTick}
+            tick={{ fontSize: 9, fill: "#9AA3AE", fontFamily: "inherit" }}
+            axisLine={false}
+            tickLine={false}
+            width={44}
+            tickCount={3}
+          />
+          <Tooltip
+            contentStyle={{
+              background: "#fff",
+              border: "1px solid #E5E7EB",
+              borderRadius: 8,
+              fontSize: 12,
+              fontFamily: "inherit",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            }}
+            formatter={(value) => [formatTick(Number(value ?? 0)), series.label]}
+            labelStyle={{ color: "#374151", fontWeight: 600 }}
+            cursor={{ stroke: color.hex, strokeWidth: 1, strokeDasharray: "4 2" }}
+          />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={color.hex}
+            strokeWidth={2}
+            fill={`url(#${gradientId})`}
+            dot={{ r: 3, fill: "#fff", stroke: color.hex, strokeWidth: 1.5 }}
+            activeDot={{ r: 5, fill: color.hex, stroke: "#fff", strokeWidth: 2 }}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 }

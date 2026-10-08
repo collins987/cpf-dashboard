@@ -27,9 +27,8 @@ export interface MonthlyTrendResult {
       titlePrefix: string;
       latestValueLabel: string;
       deltaPct: number | null;
-      points: number[];
+      rawValues: number[]; // actual bucket totals — Recharts auto-scales Y axis
       monthLabels: string[];
-      yAxisLabels: [string, string]; // [top gridline value, mid gridline value]
     }
   >;
 }
@@ -109,19 +108,13 @@ export function buildMonthlyTrend<T>(
     const bucketTotals = periodBuckets.map((b) =>
       sumInWindow(rows, dateOf, valueOf, b.start, b.end),
     );
-    const bucketMax = Math.max(...bucketTotals, 1);
-    const periodPoints = bucketTotals.map((t) => Math.round((t / bucketMax) * 100));
-
-    // Y-axis labels: top gridline = peak bucket value, mid = half of peak
-    const yAxisLabels: [string, string] = [formatValue(bucketMax), formatValue(bucketMax / 2)];
 
     byPeriod[period] = {
       titlePrefix: w.label,
       latestValueLabel: formatValue(current),
       deltaPct: periodDeltaPct(current, prior),
-      points: periodPoints,
+      rawValues: bucketTotals,
       monthLabels: periodBuckets.map((b) => b.label),
-      yAxisLabels,
     };
   }
 

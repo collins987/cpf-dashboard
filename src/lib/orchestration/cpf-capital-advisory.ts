@@ -91,13 +91,9 @@ function buildCpfcaViewForPeriod(
   );
 
   const navPeriodData = navTrend.byPeriod[period];
-  const { points: navPoints, monthLabels: navMonthLabels, yAxisLabels: navYAxis } = navPeriodData;
+  const { rawValues: navRawValues, monthLabels: navMonthLabels } = navPeriodData;
   const dealPeriodData = dealTrend.byPeriod[period];
-  const {
-    points: dealPoints,
-    monthLabels: dealMonthLabels,
-    yAxisLabels: dealYAxis,
-  } = dealPeriodData;
+  const { rawValues: dealRawValues, monthLabels: dealMonthLabels } = dealPeriodData;
 
   const SCALE_MAX = 1.3;
   const bullets: BulletRow[] = issuances.map((issuance) => {
@@ -150,10 +146,9 @@ function buildCpfcaViewForPeriod(
         trend: {
           label: `${w.label} Unit NAV (KES)`,
           color: "cpfca",
-          points: navPoints,
+          rawValues: navRawValues,
           monthLabels: navMonthLabels,
           latestValueLabel: navPeriodData.latestValueLabel,
-          yAxisLabels: navYAxis,
         },
       },
       {
@@ -191,10 +186,9 @@ function buildCpfcaViewForPeriod(
         trend: {
           label: `${w.label} Deal Value (KES B)`,
           color: "cpfca",
-          points: dealPoints,
+          rawValues: dealRawValues,
           monthLabels: dealMonthLabels,
           latestValueLabel: dealPeriodData.latestValueLabel,
-          yAxisLabels: dealYAxis,
         },
       },
       {
