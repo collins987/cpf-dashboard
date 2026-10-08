@@ -23,15 +23,15 @@ const SUBSIDIARIES: SearchEntry[] = [
 ];
 
 const SERVICES: SearchEntry[] = [
-  { label: "Digital Lending", type: "service", route: RUKISHA },
-  { label: "Digital Payments & Wallets", type: "service", route: RUKISHA },
+  { label: "Lending", type: "service", route: RUKISHA },
+  { label: "Payments & Transfers", type: "service", route: RUKISHA },
   { label: "Savings", type: "service", route: RUKISHA },
   { label: "Pension Fund Administration", type: "service", route: CPFFS },
   { label: "Trust Fund Administration", type: "service", route: CPFFS },
   { label: "Agency Services", type: "service", route: CPFFS },
-  { label: "REIT (Vuka Fund)", type: "service", route: CPFCA },
-  { label: "Structured Finance Advisory", type: "service", route: CPFCA },
-  { label: "Capital Markets Issuance", type: "service", route: CPFCA },
+  { label: "Alternative Investments (REITs)", type: "service", route: CPFCA },
+  { label: "Structured & Project Finance Advisory", type: "service", route: CPFCA },
+  { label: "Debt Capital Markets (Sukuk/Bonds)", type: "service", route: CPFCA },
 ];
 
 const KPI_TO_ROUTE: Record<string, string> = {
@@ -85,7 +85,7 @@ const KPIS: SearchEntry[] = Object.keys(KPI_CALCULATIONS).map((label) => ({
 
 export const SEARCH_CATALOG: SearchEntry[] = [...SUBSIDIARIES, ...SERVICES, ...KPIS];
 
-export function searchCatalog(query: string, limit = 10): SearchEntry[] {
+export function searchCatalog(query: string, limit = 20): SearchEntry[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
   return SEARCH_CATALOG.filter((e) => e.label.toLowerCase().includes(q)).slice(0, limit);

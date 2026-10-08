@@ -73,11 +73,16 @@ export function buildMonthlyTrend<T>(
     // YTD → one bucket per month Jan→current month.
     let periodBuckets: { start: Date; end: Date; label: string }[];
     if (period === "MoM") {
-      // Split the current month into 4 roughly-equal week-sized slices
-      const msPerSlice = (w.end.getTime() - w.start.getTime()) / 4;
+      // Trailing 4 completed calendar weeks ending today, so all buckets have real data.
+      // Each week is 7 days; W4 ends at the end of today, W1 starts 28 days ago.
+      const todayEnd = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59),
+      );
       periodBuckets = Array.from({ length: 4 }, (_, i) => {
-        const s = new Date(w.start.getTime() + i * msPerSlice);
-        const e = new Date(w.start.getTime() + (i + 1) * msPerSlice - 1);
+        const daysBack = (3 - i) * 7;
+        const s = new Date(todayEnd.getTime() - (daysBack + 6) * 86_400_000);
+        s.setUTCHours(0, 0, 0, 0);
+        const e = new Date(todayEnd.getTime() - daysBack * 86_400_000);
         return { start: s, end: e, label: `W${i + 1}` };
       });
     } else if (period === "QoQ") {
