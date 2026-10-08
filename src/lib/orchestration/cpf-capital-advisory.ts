@@ -96,18 +96,21 @@ function buildCpfcaViewForPeriod(
     rawValues: navRawValues,
     monthLabels: navMonthLabels,
     quarterBoundaryLabel: navQBoundary,
+    qoqPair: navQoQPair,
   } = navPeriodData;
   const dealPeriodData = dealTrend.byPeriod[period];
   const {
     rawValues: dealRawValues,
     monthLabels: dealMonthLabels,
     quarterBoundaryLabel: dealQBoundary,
+    qoqPair: dealQoQPair,
   } = dealPeriodData;
   const issuancePeriodData = issuanceTrend.byPeriod[period];
   const {
     rawValues: issuanceRawValues,
     monthLabels: issuanceMonthLabels,
     quarterBoundaryLabel: issuanceQBoundary,
+    qoqPair: issuanceQoQPair,
   } = issuancePeriodData;
 
   const SCALE_MAX = 1.3;
@@ -165,6 +168,7 @@ function buildCpfcaViewForPeriod(
           monthLabels: navMonthLabels,
           latestValueLabel: navPeriodData.latestValueLabel,
           quarterBoundaryLabel: navQBoundary,
+          qoqPair: navQoQPair,
         },
       },
       {
@@ -206,6 +210,7 @@ function buildCpfcaViewForPeriod(
           monthLabels: dealMonthLabels,
           latestValueLabel: dealPeriodData.latestValueLabel,
           quarterBoundaryLabel: dealQBoundary,
+          qoqPair: dealQoQPair,
         },
       },
       {
@@ -246,6 +251,7 @@ function buildCpfcaViewForPeriod(
           monthLabels: issuanceMonthLabels,
           latestValueLabel: issuancePeriodData.latestValueLabel,
           quarterBoundaryLabel: issuanceQBoundary,
+          qoqPair: issuanceQoQPair,
         },
       },
     ],

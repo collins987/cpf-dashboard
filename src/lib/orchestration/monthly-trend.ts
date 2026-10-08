@@ -1,5 +1,6 @@
 import type { Period } from "@/lib/calculations/period";
 import { getPeriodWindow, sumInWindow, periodDeltaPct } from "@/lib/calculations/period";
+import type { QoQChartSide } from "./view-models";
 
 const MONTH_ABBR = [
   "Jan",
@@ -27,9 +28,10 @@ export interface MonthlyTrendResult {
       titlePrefix: string;
       latestValueLabel: string;
       deltaPct: number | null;
-      rawValues: number[]; // actual bucket totals — Recharts auto-scales Y axis
+      rawValues: number[];
       monthLabels: string[];
-      quarterBoundaryLabel?: string; // QoQ only: X-axis label where the new quarter begins
+      quarterBoundaryLabel?: string;
+      qoqPair?: { prior: QoQChartSide; current: QoQChartSide }; // QoQ only: split dual-chart data
     }
   >;
 }
@@ -124,6 +126,72 @@ export function buildMonthlyTrend<T>(
       sumInWindow(rows, dateOf, valueOf, b.start, b.end),
     );
 
+    let qoqPair: { prior: QoQChartSide; current: QoQChartSide } | undefined;
+    if (period === "QoQ") {
+      const q = Math.floor(now.getUTCMonth() / 3);
+      const priorQ = q === 0 ? 3 : q - 1;
+      const priorYear = q === 0 ? now.getUTCFullYear() - 1 : now.getUTCFullYear();
+      const curYear = now.getUTCFullYear();
+      const priorQStartMonth = priorQ * 3; // 0-indexed month
+      const priorQEndMonth = priorQStartMonth + 2;
+      const curQStartMonth = q * 3;
+
+      const FULL_MONTHS = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
+      const priorMonthAbbrs = [0, 1, 2].map(
+        (i) => `${MONTH_ABBR[priorQStartMonth + i]} ${priorYear}`,
+      );
+      const curMonthLabel = `${FULL_MONTHS[now.getUTCMonth()]} ${curYear} (MTD)`;
+
+      const priorEnd = new Date(Date.UTC(priorYear, priorQEndMonth + 1, 0, 23, 59, 59));
+      const priorRaw = [0, 1, 2].map((i) => {
+        const ms = new Date(Date.UTC(priorYear, priorQStartMonth + i, 1));
+        const me = new Date(Date.UTC(priorYear, priorQStartMonth + i + 1, 0, 23, 59, 59));
+        return sumInWindow(rows, dateOf, valueOf, ms, me);
+      });
+      const curRaw = [
+        sumInWindow(
+          rows,
+          dateOf,
+          valueOf,
+          new Date(Date.UTC(curYear, curQStartMonth, 1)),
+          new Date(Date.UTC(curYear, now.getUTCMonth(), now.getUTCDate(), 23, 59, 59)),
+        ),
+      ];
+
+      const priorQLabel = `Q${priorQ + 1} ${priorYear}`;
+      const curQLabel = `Q${q + 1} ${curYear}`;
+      const priorStart = new Date(Date.UTC(priorYear, priorQStartMonth, 1));
+
+      qoqPair = {
+        prior: {
+          rawValues: priorRaw,
+          monthLabels: priorMonthAbbrs,
+          title: `${priorQLabel} — Prior Quarter`,
+          dateRangeLabel: `${FULL_MONTHS[priorQStartMonth].slice(0, 3)} 1 – ${FULL_MONTHS[priorQEndMonth].slice(0, 3)} ${priorEnd.getUTCDate()}, ${priorYear} (Completed)`,
+        },
+        current: {
+          rawValues: curRaw,
+          monthLabels: [curMonthLabel],
+          title: `${curQLabel} — Current Quarter`,
+          dateRangeLabel: `${FULL_MONTHS[curQStartMonth].slice(0, 3)} 1 – ${FULL_MONTHS[now.getUTCMonth()].slice(0, 3)} ${now.getUTCDate()}, ${curYear} (${now.getUTCDate()} day${now.getUTCDate() === 1 ? "" : "s"} in)`,
+        },
+      };
+      void priorStart; // used above implicitly via priorYear/month
+    }
+
     byPeriod[period] = {
       titlePrefix: w.label,
       latestValueLabel: formatValue(current),
@@ -132,6 +200,7 @@ export function buildMonthlyTrend<T>(
       monthLabels: periodBuckets.map((b) => b.label),
       ...(period === "QoQ" && {
         quarterBoundaryLabel: periodBuckets[periodBuckets.length - 1].label,
+        qoqPair,
       }),
     };
   }

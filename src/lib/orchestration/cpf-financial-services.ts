@@ -126,12 +126,14 @@ function buildCpffsViewForPeriod(
     rawValues: agencyRawValues,
     monthLabels: agencyMonthLabels,
     quarterBoundaryLabel: agencyQBoundary,
+    qoqPair: agencyQoQPair,
   } = agencyPeriodData;
   const fundBalancePeriodData = fundBalanceTrend.byPeriod[period];
   const {
     rawValues: fundRawValues,
     monthLabels: fundMonthLabels,
     quarterBoundaryLabel: fundQBoundary,
+    qoqPair: fundQoQPair,
   } = fundBalancePeriodData;
 
   const view: SubsidiaryView = {
@@ -175,6 +177,7 @@ function buildCpffsViewForPeriod(
           monthLabels: fundMonthLabels,
           latestValueLabel: fundBalancePeriodData.latestValueLabel,
           quarterBoundaryLabel: fundQBoundary,
+          qoqPair: fundQoQPair,
         },
       },
       {
@@ -213,6 +216,7 @@ function buildCpffsViewForPeriod(
           monthLabels: fundMonthLabels,
           latestValueLabel: formatKes(aua),
           quarterBoundaryLabel: fundQBoundary,
+          qoqPair: fundQoQPair,
         },
       },
       {
@@ -252,6 +256,7 @@ function buildCpffsViewForPeriod(
           monthLabels: agencyMonthLabels,
           latestValueLabel: agencyPeriodData.latestValueLabel,
           quarterBoundaryLabel: agencyQBoundary,
+          qoqPair: agencyQoQPair,
         },
       },
     ],

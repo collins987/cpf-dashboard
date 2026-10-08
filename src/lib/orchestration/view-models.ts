@@ -9,13 +9,21 @@ export interface Kpi {
   exactValue?: string;
 }
 
+export interface QoQChartSide {
+  rawValues: number[];
+  monthLabels: string[];
+  title: string; // e.g. "Q3 2026 — Prior Quarter"
+  dateRangeLabel: string; // e.g. "Jul 1 – Sep 30, 2026 (Completed)"
+}
+
 export interface TrendSeries {
   label: string;
   color: "rukisha" | "cpffs" | "cpfca";
   rawValues: number[]; // actual metric values per bucket — Recharts scales automatically
   monthLabels: string[];
   latestValueLabel: string;
-  quarterBoundaryLabel?: string; // if set, draw a vertical boundary line at this X-axis label
+  quarterBoundaryLabel?: string;
+  qoqPair?: { prior: QoQChartSide; current: QoQChartSide };
 }
 
 export interface BulletRow {

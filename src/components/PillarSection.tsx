@@ -1,5 +1,6 @@
 import { KpiTile } from "./KpiTile";
 import { TrendChart } from "./TrendChart";
+import { QoQTrendChart } from "./QoQTrendChart";
 import { BulletChart } from "./BulletChart";
 import { KPI_CALCULATIONS } from "./kpi-calculations";
 import { SUBSIDIARY_COLORS, type SubsidiaryColorKey } from "./colors";
@@ -25,7 +26,11 @@ export function PillarSection({ pillar, color }: PillarSectionProps) {
               <KpiTile key={kpi.label} kpi={kpi} calculation={KPI_CALCULATIONS[kpi.label] ?? ""} />
             ))}
           </div>
-          <TrendChart series={pillar.trend!} />
+          {pillar.trend!.qoqPair ? (
+            <QoQTrendChart series={pillar.trend!} />
+          ) : (
+            <TrendChart series={pillar.trend!} />
+          )}
         </>
       ) : (
         <div className="tilegrid">

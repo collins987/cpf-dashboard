@@ -105,6 +105,7 @@ function buildRukishaViewForPeriod(
     rawValues: txnRawValues,
     monthLabels: txnMonthLabels,
     quarterBoundaryLabel: txnQBoundary,
+    qoqPair: txnQoQPair,
   } = txnPeriodData;
 
   const view: SubsidiaryView = {
@@ -149,6 +150,7 @@ function buildRukishaViewForPeriod(
           monthLabels: txnMonthLabels,
           latestValueLabel: txnPeriodData.latestValueLabel,
           quarterBoundaryLabel: txnQBoundary,
+          qoqPair: txnQoQPair,
         },
       },
       {
@@ -189,6 +191,7 @@ function buildRukishaViewForPeriod(
           monthLabels: txnMonthLabels,
           latestValueLabel: formatKes(transactionValue),
           quarterBoundaryLabel: txnQBoundary,
+          qoqPair: txnQoQPair,
         },
       },
       {
@@ -229,6 +232,7 @@ function buildRukishaViewForPeriod(
           monthLabels: txnMonthLabels,
           latestValueLabel: formatKes(goalBased + pensionLinked.total),
           quarterBoundaryLabel: txnQBoundary,
+          qoqPair: txnQoQPair,
         },
       },
     ],
