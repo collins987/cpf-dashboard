@@ -294,6 +294,9 @@ def generate_contributions(schemes: pd.DataFrame, periods: list[str] | None = No
                 "pension_scheme_id": scheme_id,
                 "amount": round(random.uniform(500_000, 12_000_000), 2),
                 "period": period,
+                "created_at": (
+                    date(int(period[:4]), int(period[5:7]), 1) + timedelta(days=random.randint(0, 27))
+                ).isoformat(),
             }
             for period in periods
             for scheme_id in schemes["id"]
@@ -311,6 +314,9 @@ def generate_withdrawals(schemes: pd.DataFrame, periods: list[str] | None = None
                 "pension_scheme_id": scheme_id,
                 "amount": round(random.uniform(0, 3_000_000), 2),
                 "period": period,
+                "created_at": (
+                    date(int(period[:4]), int(period[5:7]), 1) + timedelta(days=random.randint(0, 27))
+                ).isoformat(),
             }
             for period in periods
             for scheme_id in schemes["id"]
@@ -394,7 +400,10 @@ def generate_fee_ledger(num_entries: int = NUM_FEE_ENTRIES, periods: list[str] |
                 "subsidiary_id": CPF_FINANCIAL_SERVICES,
                 "source": "agency",
                 "fee_amount": round(random.uniform(10_000, 800_000), 2),
-                "period": random.choice(periods),
+                "period": (p := random.choice(periods)),
+                "created_at": (
+                    date(int(p[:4]), int(p[5:7]), 1) + timedelta(days=random.randint(0, 27))
+                ).isoformat(),
             }
             for _ in range(num_entries)
         ]
@@ -421,7 +430,7 @@ def generate_reit_holdings(num_holders: int = NUM_REIT_HOLDERS) -> pd.DataFrame:
     )
 
 
-def generate_reit_nav_history(start_nav: float = 20.10, end_nav: float = 21.85, months: int = 6) -> pd.DataFrame:
+def generate_reit_nav_history(start_nav: float = 20.10, end_nav: float = 21.85, months: int = 12) -> pd.DataFrame:
     rows = []
     step = (end_nav - start_nav) / max(months - 1, 1)
     for i in range(months):
@@ -447,7 +456,7 @@ def generate_deals(num_deals: int = NUM_DEALS) -> pd.DataFrame:
                 "deal_type": "structured_finance",
                 "deal_value": deal_value,
                 "advisory_fee": round(deal_value * random.uniform(0.015, 0.03), 2),
-                "close_date": _random_date_within(180).isoformat(),
+                "close_date": _random_date_within(TRAILING_DAYS).isoformat(),
             }
         )
     return pd.DataFrame(rows)
@@ -472,7 +481,7 @@ def generate_issuances() -> pd.DataFrame:
                 "profit_rate": profit_rate,
                 "amount_offered": amount_offered,
                 "amount_subscribed": round(amount_subscribed, 2),
-                "issue_date": _random_date_within(150).isoformat(),
+                "issue_date": _random_date_within(TRAILING_DAYS).isoformat(),
             }
         )
     return pd.DataFrame(rows)

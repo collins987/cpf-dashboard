@@ -33,6 +33,7 @@ const mapContribution = (r: Record<string, unknown>): ContributionRow => ({
   pensionSchemeId: r.pension_scheme_id as string,
   amount: Number(r.amount),
   period: r.period as string,
+  createdAt: (r.created_at as string) ?? new Date().toISOString(),
 });
 
 const mapWithdrawal = (r: Record<string, unknown>): WithdrawalRow => ({
@@ -40,6 +41,7 @@ const mapWithdrawal = (r: Record<string, unknown>): WithdrawalRow => ({
   pensionSchemeId: r.pension_scheme_id as string,
   amount: Number(r.amount),
   period: r.period as string,
+  createdAt: (r.created_at as string) ?? new Date().toISOString(),
 });
 
 const mapTrustAccount = (r: Record<string, unknown>): TrustAccountRow => ({
@@ -77,6 +79,7 @@ const mapFeeLedger = (r: Record<string, unknown>): FeeLedgerRow => ({
   source: r.source as FeeLedgerRow["source"],
   feeAmount: Number(r.fee_amount),
   period: r.period as string,
+  createdAt: (r.created_at as string) ?? new Date().toISOString(),
 });
 
 export function getPensionSchemes(

@@ -78,6 +78,7 @@ export interface ContributionRow {
   pensionSchemeId: string;
   amount: number;
   period: string;
+  createdAt: string;
 }
 
 export interface WithdrawalRow {
@@ -85,6 +86,7 @@ export interface WithdrawalRow {
   pensionSchemeId: string;
   amount: number;
   period: string;
+  createdAt: string;
 }
 
 export interface FundBalanceRow {
@@ -131,6 +133,7 @@ export interface FeeLedgerRow {
   source: "agency";
   feeAmount: number;
   period: string;
+  createdAt: string;
 }
 
 // ---------- CPF Capital & Advisory ----------

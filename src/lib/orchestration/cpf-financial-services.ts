@@ -62,9 +62,9 @@ function buildCpffsViewForPeriod(
   const mandatesAsOf = asOfWindow(agencyMandates, (m) => m.startedDate, w.end);
 
   // Flow metrics: in-window
-  const contribPeriod = inWindow(contributions, (c) => c.period, w.start, w.end);
-  const contribPrior = inWindow(contributions, (c) => c.period, w.priorStart, w.priorEnd);
-  const withdrawalsPeriod = inWindow(withdrawals, (ww) => ww.period, w.start, w.end);
+  const contribPeriod = inWindow(contributions, (c) => c.createdAt, w.start, w.end);
+  const contribPrior = inWindow(contributions, (c) => c.createdAt, w.priorStart, w.priorEnd);
+  const withdrawalsPeriod = inWindow(withdrawals, (ww) => ww.createdAt, w.start, w.end);
   const agencyTxnPeriod = inWindow(agencyTransactions, (t) => t.createdAt, w.start, w.end);
   const agencyTxnPrior = inWindow(agencyTransactions, (t) => t.createdAt, w.priorStart, w.priorEnd);
 
@@ -80,7 +80,7 @@ function buildCpffsViewForPeriod(
   const fundBalancePrior = calculateFundBalance(
     OPENING_BALANCE,
     contribPrior,
-    inWindow(withdrawals, (ww) => ww.period, w.priorStart, w.priorEnd),
+    inWindow(withdrawals, (ww) => ww.createdAt, w.priorStart, w.priorEnd),
     INVESTMENT_RETURNS,
   );
   const activeSchemes = calculateActiveSchemes(schemesAsOf);
@@ -305,7 +305,7 @@ export async function getCpfFinancialServicesView(): Promise<{
   );
   const fundBalanceTrend = buildMonthlyTrend(
     contributions,
-    (c) => c.period,
+    (c) => c.createdAt,
     (c) => c.amount,
     formatKes,
     now,

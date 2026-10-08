@@ -34,6 +34,7 @@ export const contributions: ContributionRow[] = pensionSchemes.map((scheme) => (
   pensionSchemeId: scheme.id,
   amount: randomFloat(rand, 500_000, 12_000_000),
   period: "2026-06",
+  createdAt: "2026-06-10",
 }));
 
 export const withdrawals: WithdrawalRow[] = pensionSchemes
@@ -43,6 +44,7 @@ export const withdrawals: WithdrawalRow[] = pensionSchemes
     pensionSchemeId: scheme.id,
     amount: randomFloat(rand, 0, 3_000_000),
     period: "2026-06",
+    createdAt: "2026-06-10",
   }));
 
 export const trustAccounts: TrustAccountRow[] = Array.from({ length: 58 }, () => ({
@@ -84,4 +86,5 @@ export const feeLedger: FeeLedgerRow[] = Array.from({ length: 120 }, () => ({
   source: "agency",
   feeAmount: randomFloat(rand, 10_000, 800_000),
   period: "2026-06",
+  createdAt: "2026-06-10",
 }));
