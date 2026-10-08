@@ -247,8 +247,25 @@ def generate_scheme_members(schemes: pd.DataFrame, avg_members_per_scheme: int =
     return pd.DataFrame(rows)
 
 
-def generate_contributions(schemes: pd.DataFrame, period: str = "2026-06") -> pd.DataFrame:
-    """One contribution per scheme per period."""
+def _trailing_periods(months: int = 6) -> list[str]:
+    """The `months` calendar periods ("YYYY-MM") ending at TODAY's month —
+    used so MoM/QoQ/YTD graphs (Phase 5 Extended UI Enhancements §9.7) have
+    genuine multi-month data instead of a single hard-coded period."""
+    periods = []
+    for i in range(months - 1, -1, -1):
+        y, m = TODAY.year, TODAY.month - i
+        while m < 1:
+            m += 12
+            y -= 1
+        periods.append(f"{y:04d}-{m:02d}")
+    return periods
+
+
+def generate_contributions(schemes: pd.DataFrame, periods: list[str] | None = None) -> pd.DataFrame:
+    """One contribution per scheme per period, across the trailing months —
+    real multi-period data (Phase 5 Extended UI Enhancements §9.7), not the
+    single hard-coded "2026-06" this generator originally produced."""
+    periods = periods or _trailing_periods()
     return pd.DataFrame(
         [
             {
@@ -257,13 +274,15 @@ def generate_contributions(schemes: pd.DataFrame, period: str = "2026-06") -> pd
                 "amount": round(random.uniform(500_000, 12_000_000), 2),
                 "period": period,
             }
+            for period in periods
             for scheme_id in schemes["id"]
         ]
     )
 
 
-def generate_withdrawals(schemes: pd.DataFrame, period: str = "2026-06") -> pd.DataFrame:
-    """Withdrawals for ~60% of schemes in the period."""
+def generate_withdrawals(schemes: pd.DataFrame, periods: list[str] | None = None) -> pd.DataFrame:
+    """Withdrawals for ~60% of schemes, across the trailing months."""
+    periods = periods or _trailing_periods()
     return pd.DataFrame(
         [
             {
@@ -272,6 +291,7 @@ def generate_withdrawals(schemes: pd.DataFrame, period: str = "2026-06") -> pd.D
                 "amount": round(random.uniform(0, 3_000_000), 2),
                 "period": period,
             }
+            for period in periods
             for scheme_id in schemes["id"]
             if random.random() < 0.6
         ]
@@ -326,7 +346,10 @@ def generate_agency_transactions(mandates: pd.DataFrame, avg_per_mandate: int = 
     return pd.DataFrame(rows)
 
 
-def generate_fee_ledger(num_entries: int = NUM_FEE_ENTRIES, period: str = "2026-06") -> pd.DataFrame:
+def generate_fee_ledger(num_entries: int = NUM_FEE_ENTRIES, periods: list[str] | None = None) -> pd.DataFrame:
+    """Fee entries spread evenly across the trailing months (same total row
+    count as before — still within the <=900-rows-per-table cap)."""
+    periods = periods or _trailing_periods()
     return pd.DataFrame(
         [
             {
@@ -334,7 +357,7 @@ def generate_fee_ledger(num_entries: int = NUM_FEE_ENTRIES, period: str = "2026-
                 "subsidiary_id": CPF_FINANCIAL_SERVICES,
                 "source": "agency",
                 "fee_amount": round(random.uniform(10_000, 800_000), 2),
-                "period": period,
+                "period": random.choice(periods),
             }
             for _ in range(num_entries)
         ]

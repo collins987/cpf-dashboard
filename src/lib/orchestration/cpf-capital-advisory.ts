@@ -20,7 +20,7 @@ import {
   getIssuancesYtd,
 } from "@/lib/data/cpf-capital-advisory-queries";
 import { formatKes, formatKesExact, formatNumber, formatPercent } from "@/lib/format";
-import { syntheticTrend } from "./trend";
+import { buildMonthlyTrend, buildKpiPeriodDeltas } from "./monthly-trend";
 import type { SubsidiaryView, SubsidiaryTotals, BulletRow } from "./view-models";
 
 const YEAR_START = "2026-01-01";
@@ -54,6 +54,26 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
   const weightedAvgProfitRate = calculateWeightedAvgProfitRate(issuances);
   const latestIssuance = issuances[issuances.length - 1];
   const latestSubscriptionRate = latestIssuance ? calculateSubscriptionRate(latestIssuance) : null;
+
+  // reit_nav_history.period and deal.closeDate are both real dated fields —
+  // Date("YYYY-MM") parses as the 1st of that month.
+  const navTrend = buildMonthlyTrend(
+    reitNavHistory,
+    (n) => n.period,
+    (n) => n.navPerUnit,
+    (n) => n.toFixed(2),
+  );
+  const dealTrend = buildMonthlyTrend(
+    deals,
+    (d) => d.closeDate,
+    (d) => d.dealValue,
+    formatKes,
+  );
+  const dealDeltas = buildKpiPeriodDeltas(
+    deals,
+    (d) => d.closeDate,
+    (d) => d.dealValue,
+  );
 
   const SCALE_MAX = 1.3;
   const bullets: BulletRow[] = issuances.map((issuance) => {
@@ -106,9 +126,23 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
         trend: {
           label: "Unit NAV Trend (KES)",
           color: "cpfca",
-          points: syntheticTrend(31),
-          monthLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+          points: navTrend.points,
+          monthLabels: navTrend.monthLabels,
           latestValueLabel: `${latestNav.toFixed(2)} latest`,
+          byPeriod: {
+            MoM: {
+              titlePrefix: navTrend.byPeriod.MoM.titlePrefix,
+              latestValueLabel: `${navTrend.byPeriod.MoM.latestValueLabel} latest`,
+            },
+            QoQ: {
+              titlePrefix: navTrend.byPeriod.QoQ.titlePrefix,
+              latestValueLabel: `${navTrend.byPeriod.QoQ.latestValueLabel} latest`,
+            },
+            YTD: {
+              titlePrefix: navTrend.byPeriod.YTD.titlePrefix,
+              latestValueLabel: `${navTrend.byPeriod.YTD.latestValueLabel} latest`,
+            },
+          },
         },
       },
       {
@@ -127,6 +161,7 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
             deltaLabel: "▲ 12.4% YTD",
             deltaDirection: "up",
             note: "Incl. Talanta Stadium-type structured deals",
+            byPeriodDelta: dealDeltas,
           },
           {
             label: "Average Deal Size",
@@ -144,11 +179,25 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
           },
         ],
         trend: {
-          label: "Cumulative Deal Value YTD (KES B)",
+          label: "Deal Value (KES B)",
           color: "cpfca",
-          points: syntheticTrend(32),
-          monthLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+          points: dealTrend.points,
+          monthLabels: dealTrend.monthLabels,
           latestValueLabel: formatKes(dealValue),
+          byPeriod: {
+            MoM: {
+              titlePrefix: dealTrend.byPeriod.MoM.titlePrefix,
+              latestValueLabel: dealTrend.byPeriod.MoM.latestValueLabel,
+            },
+            QoQ: {
+              titlePrefix: dealTrend.byPeriod.QoQ.titlePrefix,
+              latestValueLabel: dealTrend.byPeriod.QoQ.latestValueLabel,
+            },
+            YTD: {
+              titlePrefix: dealTrend.byPeriod.YTD.titlePrefix,
+              latestValueLabel: dealTrend.byPeriod.YTD.latestValueLabel,
+            },
+          },
         },
       },
       {

@@ -25,6 +25,7 @@ import {
 } from "@/lib/data/cpf-financial-services-queries";
 import { formatKes, formatKesExact, formatNumber, formatPercent } from "@/lib/format";
 import { syntheticTrend } from "./trend";
+import { buildMonthlyTrend, buildKpiPeriodDeltas } from "./monthly-trend";
 import type { SubsidiaryView, SubsidiaryTotals } from "./view-models";
 
 const OPENING_BALANCE = 17_900_000_000;
@@ -75,6 +76,28 @@ export async function getCpfFinancialServicesView(): Promise<{
   const principalsServed = calculatePrincipalsServed(agencyMandates);
   const agencyFeeIncome = calculateAgencyFeeIncome(feeLedger);
 
+  // contribution.period is "YYYY-MM"; Date("YYYY-MM") parses as the 1st of
+  // that month, so the existing period field doubles as a real date source
+  // without a schema change. Multi-month data requires seed.py to generate
+  // more than the single "2026-06" period — see data/seed.py.
+  const fundBalanceTrend = buildMonthlyTrend(
+    contributions,
+    (c) => c.period,
+    (c) => c.amount,
+    formatKes,
+  );
+  const agencyTrend = buildMonthlyTrend(
+    agencyTransactions,
+    (t) => t.createdAt,
+    (t) => t.amount,
+    formatKes,
+  );
+  const agencyDeltas = buildKpiPeriodDeltas(
+    agencyTransactions,
+    (t) => t.createdAt,
+    (t) => t.amount,
+  );
+
   const view: SubsidiaryView = {
     tag: "Pensions, Trust & Agency",
     subtitle: "Pension fund administration, trust fund administration and agency services.",
@@ -112,9 +135,23 @@ export async function getCpfFinancialServicesView(): Promise<{
         trend: {
           label: "Fund Balance Trend (KES B)",
           color: "cpffs",
-          points: syntheticTrend(21),
-          monthLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+          points: fundBalanceTrend.points,
+          monthLabels: fundBalanceTrend.monthLabels,
           latestValueLabel: formatKes(fundBalance),
+          byPeriod: {
+            MoM: {
+              titlePrefix: fundBalanceTrend.byPeriod.MoM.titlePrefix,
+              latestValueLabel: formatKes(fundBalance),
+            },
+            QoQ: {
+              titlePrefix: fundBalanceTrend.byPeriod.QoQ.titlePrefix,
+              latestValueLabel: formatKes(fundBalance),
+            },
+            YTD: {
+              titlePrefix: fundBalanceTrend.byPeriod.YTD.titlePrefix,
+              latestValueLabel: formatKes(fundBalance),
+            },
+          },
         },
       },
       {
@@ -163,6 +200,7 @@ export async function getCpfFinancialServicesView(): Promise<{
             exactValue: formatKesExact(agencyValue),
             deltaLabel: "▲ 6.0% QoQ",
             deltaDirection: "up",
+            byPeriodDelta: agencyDeltas,
           },
           {
             label: "Agency Transaction Volume",
@@ -187,9 +225,23 @@ export async function getCpfFinancialServicesView(): Promise<{
         trend: {
           label: "Agency Transaction Value Trend (KES M)",
           color: "cpffs",
-          points: syntheticTrend(23),
-          monthLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+          points: agencyTrend.points,
+          monthLabels: agencyTrend.monthLabels,
           latestValueLabel: formatKes(agencyValue),
+          byPeriod: {
+            MoM: {
+              titlePrefix: agencyTrend.byPeriod.MoM.titlePrefix,
+              latestValueLabel: agencyTrend.byPeriod.MoM.latestValueLabel,
+            },
+            QoQ: {
+              titlePrefix: agencyTrend.byPeriod.QoQ.titlePrefix,
+              latestValueLabel: agencyTrend.byPeriod.QoQ.latestValueLabel,
+            },
+            YTD: {
+              titlePrefix: agencyTrend.byPeriod.YTD.titlePrefix,
+              latestValueLabel: agencyTrend.byPeriod.YTD.latestValueLabel,
+            },
+          },
         },
       },
     ],

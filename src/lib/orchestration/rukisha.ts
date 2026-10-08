@@ -23,13 +23,17 @@ import {
 } from "@/lib/data/rukisha-queries";
 import { formatKes, formatKesExact, formatNumber, formatPercent } from "@/lib/format";
 import { syntheticTrend } from "./trend";
+import { buildMonthlyTrend, buildKpiPeriodDeltas } from "./monthly-trend";
 import type { SubsidiaryView, SubsidiaryTotals } from "./view-models";
 
 /**
- * Note on deltas: period-over-period deltas (the "▲ x% MoM" labels) require a
- * prior-period dataset, which the current seed script does not yet generate.
- * The labels below are illustrative placeholders, matching the approved
- * dashboard mockup, until a prior-period query is added.
+ * Note on deltas: most KPI deltas below ("▲ x% MoM") remain illustrative
+ * static placeholders — their backing tables (loan_account, wallet,
+ * savings_account) have no date column, so a genuine period-over-period
+ * comparison isn't possible without a schema change (deliberately not made —
+ * see docs/Phase 5 - Development.docx §9.5/§9.7). Transaction Value IS
+ * genuinely dynamic: transaction.createdAt is a real seeded date, so its
+ * trend/delta are computed for real via buildMonthlyTrend/buildKpiPeriodDeltas.
  */
 
 export async function getRukishaView(): Promise<{
@@ -62,6 +66,18 @@ export async function getRukishaView(): Promise<{
   const savingsToLoan = calculateSavingsToLoanRatio(
     goalBased + pensionLinked.total,
     portfolioValue,
+  );
+
+  const txnTrend = buildMonthlyTrend(
+    transactions,
+    (t) => t.createdAt,
+    (t) => t.amount,
+    formatKes,
+  );
+  const txnDeltas = buildKpiPeriodDeltas(
+    transactions,
+    (t) => t.createdAt,
+    (t) => t.amount,
   );
 
   const view: SubsidiaryView = {
@@ -122,6 +138,7 @@ export async function getRukishaView(): Promise<{
             exactValue: formatKesExact(transactionValue),
             deltaLabel: "▲ 5.7% MoM",
             deltaDirection: "up",
+            byPeriodDelta: txnDeltas,
           },
           {
             label: "Active Wallets",
@@ -139,11 +156,25 @@ export async function getRukishaView(): Promise<{
           },
         ],
         trend: {
-          label: "Monthly Transaction Value (KES M)",
+          label: "Transaction Value (KES M)",
           color: "rukisha",
-          points: syntheticTrend(12),
-          monthLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+          points: txnTrend.points,
+          monthLabels: txnTrend.monthLabels,
           latestValueLabel: formatKes(transactionValue),
+          byPeriod: {
+            MoM: {
+              titlePrefix: txnTrend.byPeriod.MoM.titlePrefix,
+              latestValueLabel: txnTrend.byPeriod.MoM.latestValueLabel,
+            },
+            QoQ: {
+              titlePrefix: txnTrend.byPeriod.QoQ.titlePrefix,
+              latestValueLabel: txnTrend.byPeriod.QoQ.latestValueLabel,
+            },
+            YTD: {
+              titlePrefix: txnTrend.byPeriod.YTD.titlePrefix,
+              latestValueLabel: txnTrend.byPeriod.YTD.latestValueLabel,
+            },
+          },
         },
       },
       {

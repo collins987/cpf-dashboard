@@ -1,5 +1,6 @@
 import { SUBSIDIARY_COLORS } from "./colors";
 import type { TrendSeries } from "@/lib/orchestration/view-models";
+import type { Period } from "@/lib/calculations/period";
 
 const X_POSITIONS = [0, 80, 160, 240, 320, 400];
 
@@ -10,21 +11,29 @@ function toY(point: number): number {
 
 interface TrendChartProps {
   series: TrendSeries;
+  period: Period;
 }
 
 /** A line/area sparkline with gridlines and point markers — fixed aspect ratio so it never distorts. */
-export function TrendChart({ series }: TrendChartProps) {
+export function TrendChart({ series, period }: TrendChartProps) {
   const color = SUBSIDIARY_COLORS[series.color];
   const coords = series.points.map((p, i) => [X_POSITIONS[i], toY(p)] as const);
   const linePoints = coords.map(([x, y]) => `${x},${y}`).join(" ");
   const areaPoints = `${linePoints} 400,100 0,100`;
 
+  // When byPeriod exists, both the title prefix and the summary value are
+  // real, recomputed per the active period (see monthly-trend.ts). When it
+  // doesn't, the series is an illustrative placeholder and stays fixed.
+  const active = series.byPeriod?.[period];
+  const title = active ? `${active.titlePrefix} ${series.label}` : series.label;
+  const value = active ? active.latestValueLabel : series.latestValueLabel;
+
   return (
     <div className="card chartcard">
       <div className="chartheadrow">
-        <span className="chartlabel">{series.label}</span>
+        <span className="chartlabel">{title}</span>
         <span className="chartvalue" style={{ color: color.hex }}>
-          {series.latestValueLabel}
+          {value}
         </span>
       </div>
       <svg viewBox="0 0 400 110" width="100%" height={130} style={{ display: "block" }}>
