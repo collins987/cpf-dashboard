@@ -20,7 +20,7 @@ export interface MonthlyTrendResult {
   /** Real trailing-6-month bucketed totals, scaled 0-100 for the sparkline. */
   points: number[];
   monthLabels: string[];
-  /** Per-period (MoM/QoQ/YTD) title prefix + summary value label + real delta + period-scoped chart points. */
+  /** Per-period (MoM/QoQ/YTD) title prefix + summary value label + real delta + period-scoped chart data. */
   byPeriod: Record<
     Period,
     {
@@ -29,6 +29,7 @@ export interface MonthlyTrendResult {
       deltaPct: number | null;
       points: number[];
       monthLabels: string[];
+      yAxisLabels: [string, string]; // [top gridline value, mid gridline value]
     }
   >;
 }
@@ -67,12 +68,12 @@ export function buildMonthlyTrend<T>(
     const prior = sumInWindow(rows, dateOf, valueOf, w.priorStart, w.priorEnd);
 
     // Build period-scoped chart buckets so the sparkline changes with the filter.
-    // MoM → 4 weekly buckets within the month.
-    // QoQ → 3 monthly buckets (one per month of the quarter).
-    // YTD → one bucket per month from Jan to the current month.
+    // MoM → 4 weekly buckets within the current month (W1–W4).
+    // QoQ → trailing 3 completed calendar months (avoids future-empty-month cliff).
+    // YTD → one bucket per month Jan→current month.
     let periodBuckets: { start: Date; end: Date; label: string }[];
     if (period === "MoM") {
-      // Split the month into 4 roughly-equal week-sized slices
+      // Split the current month into 4 roughly-equal week-sized slices
       const msPerSlice = (w.end.getTime() - w.start.getTime()) / 4;
       periodBuckets = Array.from({ length: 4 }, (_, i) => {
         const s = new Date(w.start.getTime() + i * msPerSlice);
@@ -80,25 +81,24 @@ export function buildMonthlyTrend<T>(
         return { start: s, end: e, label: `W${i + 1}` };
       });
     } else if (period === "QoQ") {
-      // 3 calendar months spanning the quarter
+      // Trailing 3 completed months ending at the current month — all buckets
+      // have real data, unlike current-quarter months which may be in the future.
       periodBuckets = Array.from({ length: 3 }, (_, i) => {
-        const baseMonth = w.start.getUTCMonth() + i;
-        const y = w.start.getUTCFullYear() + Math.floor(baseMonth / 12);
-        const m = baseMonth % 12;
-        const s = new Date(Date.UTC(y, m, 1));
-        const e = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59));
-        return { start: s, end: e, label: MONTH_ABBR[m] };
+        const baseMonth = now.getUTCMonth() - 2 + i;
+        const yr = now.getUTCFullYear() + Math.floor(baseMonth / 12);
+        const mo = ((baseMonth % 12) + 12) % 12;
+        const s = new Date(Date.UTC(yr, mo, 1));
+        const e = new Date(Date.UTC(yr, mo + 1, 0, 23, 59, 59));
+        return { start: s, end: e, label: MONTH_ABBR[mo] };
       });
     } else {
-      // YTD: one bucket per month Jan→current
-      const yearStart = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+      // YTD: one bucket per month Jan→current month
       const monthCount = now.getUTCMonth() + 1;
       periodBuckets = Array.from({ length: monthCount }, (_, i) => {
         const s = new Date(Date.UTC(now.getUTCFullYear(), i, 1));
         const e = new Date(Date.UTC(now.getUTCFullYear(), i + 1, 0, 23, 59, 59));
         return { start: s, end: e, label: MONTH_ABBR[i] };
       });
-      void yearStart; // suppress unused warning
     }
 
     const bucketTotals = periodBuckets.map((b) =>
@@ -107,12 +107,16 @@ export function buildMonthlyTrend<T>(
     const bucketMax = Math.max(...bucketTotals, 1);
     const periodPoints = bucketTotals.map((t) => Math.round((t / bucketMax) * 100));
 
+    // Y-axis labels: top gridline = peak bucket value, mid = half of peak
+    const yAxisLabels: [string, string] = [formatValue(bucketMax), formatValue(bucketMax / 2)];
+
     byPeriod[period] = {
       titlePrefix: w.label,
       latestValueLabel: formatValue(current),
       deltaPct: periodDeltaPct(current, prior),
       points: periodPoints,
       monthLabels: periodBuckets.map((b) => b.label),
+      yAxisLabels,
     };
   }
 

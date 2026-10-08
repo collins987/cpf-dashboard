@@ -91,9 +91,13 @@ function buildCpfcaViewForPeriod(
   );
 
   const navPeriodData = navTrend.byPeriod[period];
-  const { points: navPoints, monthLabels: navMonthLabels } = navPeriodData;
+  const { points: navPoints, monthLabels: navMonthLabels, yAxisLabels: navYAxis } = navPeriodData;
   const dealPeriodData = dealTrend.byPeriod[period];
-  const { points: dealPoints, monthLabels: dealMonthLabels } = dealPeriodData;
+  const {
+    points: dealPoints,
+    monthLabels: dealMonthLabels,
+    yAxisLabels: dealYAxis,
+  } = dealPeriodData;
 
   const SCALE_MAX = 1.3;
   const bullets: BulletRow[] = issuances.map((issuance) => {
@@ -149,6 +153,7 @@ function buildCpfcaViewForPeriod(
           points: navPoints,
           monthLabels: navMonthLabels,
           latestValueLabel: navPeriodData.latestValueLabel,
+          yAxisLabels: navYAxis,
         },
       },
       {
@@ -189,6 +194,7 @@ function buildCpfcaViewForPeriod(
           points: dealPoints,
           monthLabels: dealMonthLabels,
           latestValueLabel: dealPeriodData.latestValueLabel,
+          yAxisLabels: dealYAxis,
         },
       },
       {

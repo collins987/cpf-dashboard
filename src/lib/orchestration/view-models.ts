@@ -12,9 +12,10 @@ export interface Kpi {
 export interface TrendSeries {
   label: string;
   color: "rukisha" | "cpffs" | "cpfca";
-  points: number[]; // 6 points, already scaled 0-100 for the sparkline
+  points: number[]; // variable length, scaled 0-100 for the sparkline
   monthLabels: string[];
   latestValueLabel: string;
+  yAxisLabels?: [string, string]; // [top gridline value, mid gridline value]
 }
 
 export interface BulletRow {
