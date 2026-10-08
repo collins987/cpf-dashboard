@@ -35,6 +35,7 @@ function buildCpfcaViewForPeriod(
   issuances: Awaited<ReturnType<typeof getIssuancesYtd>>,
   navTrend: ReturnType<typeof buildMonthlyTrend>,
   dealTrend: ReturnType<typeof buildMonthlyTrend>,
+  issuanceTrend: ReturnType<typeof buildMonthlyTrend>,
   period: Period,
   now: Date,
 ): { view: SubsidiaryView; totals: SubsidiaryTotals } {
@@ -94,6 +95,8 @@ function buildCpfcaViewForPeriod(
   const { rawValues: navRawValues, monthLabels: navMonthLabels } = navPeriodData;
   const dealPeriodData = dealTrend.byPeriod[period];
   const { rawValues: dealRawValues, monthLabels: dealMonthLabels } = dealPeriodData;
+  const issuancePeriodData = issuanceTrend.byPeriod[period];
+  const { rawValues: issuanceRawValues, monthLabels: issuanceMonthLabels } = issuancePeriodData;
 
   const SCALE_MAX = 1.3;
   const bullets: BulletRow[] = issuances.map((issuance) => {
@@ -222,6 +225,13 @@ function buildCpfcaViewForPeriod(
           },
         ],
         bullets,
+        trend: {
+          label: `${w.label} Issuance Value (KES B)`,
+          color: "cpfca",
+          rawValues: issuanceRawValues,
+          monthLabels: issuanceMonthLabels,
+          latestValueLabel: issuancePeriodData.latestValueLabel,
+        },
       },
     ],
   };
@@ -263,6 +273,13 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
     formatKes,
     now,
   );
+  const issuanceTrend = buildMonthlyTrend(
+    issuances,
+    (i) => i.issueDate,
+    (i) => i.issuanceValue,
+    formatKes,
+    now,
+  );
 
   const views = {} as Record<Period, SubsidiaryView>;
   const totals = {} as Record<Period, SubsidiaryTotals>;
@@ -275,6 +292,7 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
       issuances,
       navTrend,
       dealTrend,
+      issuanceTrend,
       period,
       now,
     );
