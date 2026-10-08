@@ -55,12 +55,12 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
   const [tab, setTab] = useState<TabId>("rukisha");
   const [navOpen, setNavOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
-  const bellRef = useRef<HTMLButtonElement>(null);
+  const alertsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!alertsOpen) return;
     function handleClick(e: MouseEvent) {
-      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+      if (alertsRef.current && !alertsRef.current.contains(e.target as Node)) {
         setAlertsOpen(false);
       }
     }
@@ -129,14 +129,15 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
             >
               <MenuIcon />
             </button>
-            <button
-              ref={bellRef}
-              className="bellbtn"
-              onClick={() => setAlertsOpen((v) => !v)}
-              aria-label="Alerts"
-            >
-              <BellIcon />
-              <span className="bellbadge">{ALERTS.length}</span>
+            <div className="alertswrap" ref={alertsRef}>
+              <button
+                className="bellbtn"
+                onClick={() => setAlertsOpen((v) => !v)}
+                aria-label="Alerts"
+              >
+                <BellIcon />
+                <span className="bellbadge">{ALERTS.length}</span>
+              </button>
               <div className={alertsOpen ? "alertspanel open" : "alertspanel"}>
                 <div className="alertshead">Alerts &amp; Notifications</div>
                 {ALERTS.map((a) => (
@@ -149,7 +150,7 @@ export function DashboardShell({ rukisha, cpffs, cpfca, group, refreshMeta }: Da
                   </div>
                 ))}
               </div>
-            </button>
+            </div>
             <div className="avatar">FM</div>
             <div className="usermeta">
               <span className="username">Finance Manager</span>
