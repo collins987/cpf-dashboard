@@ -92,11 +92,23 @@ function buildCpfcaViewForPeriod(
   );
 
   const navPeriodData = navTrend.byPeriod[period];
-  const { rawValues: navRawValues, monthLabels: navMonthLabels } = navPeriodData;
+  const {
+    rawValues: navRawValues,
+    monthLabels: navMonthLabels,
+    quarterBoundaryLabel: navQBoundary,
+  } = navPeriodData;
   const dealPeriodData = dealTrend.byPeriod[period];
-  const { rawValues: dealRawValues, monthLabels: dealMonthLabels } = dealPeriodData;
+  const {
+    rawValues: dealRawValues,
+    monthLabels: dealMonthLabels,
+    quarterBoundaryLabel: dealQBoundary,
+  } = dealPeriodData;
   const issuancePeriodData = issuanceTrend.byPeriod[period];
-  const { rawValues: issuanceRawValues, monthLabels: issuanceMonthLabels } = issuancePeriodData;
+  const {
+    rawValues: issuanceRawValues,
+    monthLabels: issuanceMonthLabels,
+    quarterBoundaryLabel: issuanceQBoundary,
+  } = issuancePeriodData;
 
   const SCALE_MAX = 1.3;
   const bullets: BulletRow[] = issuances.map((issuance) => {
@@ -152,6 +164,7 @@ function buildCpfcaViewForPeriod(
           rawValues: navRawValues,
           monthLabels: navMonthLabels,
           latestValueLabel: navPeriodData.latestValueLabel,
+          quarterBoundaryLabel: navQBoundary,
         },
       },
       {
@@ -192,6 +205,7 @@ function buildCpfcaViewForPeriod(
           rawValues: dealRawValues,
           monthLabels: dealMonthLabels,
           latestValueLabel: dealPeriodData.latestValueLabel,
+          quarterBoundaryLabel: dealQBoundary,
         },
       },
       {
@@ -231,6 +245,7 @@ function buildCpfcaViewForPeriod(
           rawValues: issuanceRawValues,
           monthLabels: issuanceMonthLabels,
           latestValueLabel: issuancePeriodData.latestValueLabel,
+          quarterBoundaryLabel: issuanceQBoundary,
         },
       },
     ],

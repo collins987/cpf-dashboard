@@ -122,9 +122,17 @@ function buildCpffsViewForPeriod(
   const agencyValueDelta = formatPeriodDelta(periodDeltaPct(agencyValue, agencyValuePrior), period);
 
   const agencyPeriodData = agencyTrend.byPeriod[period];
-  const { rawValues: agencyRawValues, monthLabels: agencyMonthLabels } = agencyPeriodData;
+  const {
+    rawValues: agencyRawValues,
+    monthLabels: agencyMonthLabels,
+    quarterBoundaryLabel: agencyQBoundary,
+  } = agencyPeriodData;
   const fundBalancePeriodData = fundBalanceTrend.byPeriod[period];
-  const { rawValues: fundRawValues, monthLabels: fundMonthLabels } = fundBalancePeriodData;
+  const {
+    rawValues: fundRawValues,
+    monthLabels: fundMonthLabels,
+    quarterBoundaryLabel: fundQBoundary,
+  } = fundBalancePeriodData;
 
   const view: SubsidiaryView = {
     tag: "Pensions, Trust & Agency",
@@ -166,6 +174,7 @@ function buildCpffsViewForPeriod(
           rawValues: fundRawValues,
           monthLabels: fundMonthLabels,
           latestValueLabel: fundBalancePeriodData.latestValueLabel,
+          quarterBoundaryLabel: fundQBoundary,
         },
       },
       {
@@ -203,6 +212,7 @@ function buildCpffsViewForPeriod(
           rawValues: fundRawValues,
           monthLabels: fundMonthLabels,
           latestValueLabel: formatKes(aua),
+          quarterBoundaryLabel: fundQBoundary,
         },
       },
       {
@@ -241,6 +251,7 @@ function buildCpffsViewForPeriod(
           rawValues: agencyRawValues,
           monthLabels: agencyMonthLabels,
           latestValueLabel: agencyPeriodData.latestValueLabel,
+          quarterBoundaryLabel: agencyQBoundary,
         },
       },
     ],

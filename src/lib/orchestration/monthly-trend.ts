@@ -29,6 +29,7 @@ export interface MonthlyTrendResult {
       deltaPct: number | null;
       rawValues: number[]; // actual bucket totals — Recharts auto-scales Y axis
       monthLabels: string[];
+      quarterBoundaryLabel?: string; // QoQ only: X-axis label where the new quarter begins
     }
   >;
 }
@@ -85,16 +86,30 @@ export function buildMonthlyTrend<T>(
         return { start: s, end: e, label: `W${i + 1}` };
       });
     } else if (period === "QoQ") {
-      // Trailing 3 completed months ending at the current month — all buckets
-      // have real data, unlike current-quarter months which may be in the future.
-      periodBuckets = Array.from({ length: 3 }, (_, i) => {
-        const baseMonth = now.getUTCMonth() - 2 + i;
-        const yr = now.getUTCFullYear() + Math.floor(baseMonth / 12);
-        const mo = ((baseMonth % 12) + 12) % 12;
-        const s = new Date(Date.UTC(yr, mo, 1));
-        const e = new Date(Date.UTC(yr, mo + 1, 0, 23, 59, 59));
-        return { start: s, end: e, label: MONTH_ABBR[mo] };
-      });
+      // 3 completed months of the prior quarter + the current quarter's month-to-date.
+      // This mirrors what the "Q4 vs Q3" label promises: Q3 trend visible on the left,
+      // Q4 in-progress on the right, separated by a boundary line in the chart.
+      const q = Math.floor(now.getUTCMonth() / 3);
+      const priorQStart = q * 3 - 3; // first month index of prior quarter (may be negative)
+      periodBuckets = [
+        // Prior quarter — 3 full calendar months
+        ...Array.from({ length: 3 }, (_, i) => {
+          const baseMonth = priorQStart + i;
+          const yr = now.getUTCFullYear() + Math.floor(baseMonth / 12);
+          const mo = ((baseMonth % 12) + 12) % 12;
+          const s = new Date(Date.UTC(yr, mo, 1));
+          const e = new Date(Date.UTC(yr, mo + 1, 0, 23, 59, 59));
+          return { start: s, end: e, label: MONTH_ABBR[mo] };
+        }),
+        // Current quarter — first month to today (always has data)
+        {
+          start: new Date(Date.UTC(now.getUTCFullYear(), q * 3, 1)),
+          end: new Date(
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59),
+          ),
+          label: MONTH_ABBR[q * 3],
+        },
+      ];
     } else {
       // YTD: one bucket per month Jan→current month
       const monthCount = now.getUTCMonth() + 1;
@@ -115,6 +130,9 @@ export function buildMonthlyTrend<T>(
       deltaPct: periodDeltaPct(current, prior),
       rawValues: bucketTotals,
       monthLabels: periodBuckets.map((b) => b.label),
+      ...(period === "QoQ" && {
+        quarterBoundaryLabel: periodBuckets[periodBuckets.length - 1].label,
+      }),
     };
   }
 

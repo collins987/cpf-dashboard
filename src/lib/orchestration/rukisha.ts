@@ -101,7 +101,11 @@ function buildRukishaViewForPeriod(
   const saversDelta = formatPeriodDelta(periodDeltaPct(activeSavers, activeSaversPrior), period);
 
   const txnPeriodData = txnTrend.byPeriod[period];
-  const { rawValues: txnRawValues, monthLabels: txnMonthLabels } = txnPeriodData;
+  const {
+    rawValues: txnRawValues,
+    monthLabels: txnMonthLabels,
+    quarterBoundaryLabel: txnQBoundary,
+  } = txnPeriodData;
 
   const view: SubsidiaryView = {
     tag: "Digital Financial Services",
@@ -144,6 +148,7 @@ function buildRukishaViewForPeriod(
           rawValues: txnRawValues,
           monthLabels: txnMonthLabels,
           latestValueLabel: txnPeriodData.latestValueLabel,
+          quarterBoundaryLabel: txnQBoundary,
         },
       },
       {
@@ -183,6 +188,7 @@ function buildRukishaViewForPeriod(
           rawValues: txnRawValues,
           monthLabels: txnMonthLabels,
           latestValueLabel: formatKes(transactionValue),
+          quarterBoundaryLabel: txnQBoundary,
         },
       },
       {
@@ -222,6 +228,7 @@ function buildRukishaViewForPeriod(
           rawValues: txnRawValues,
           monthLabels: txnMonthLabels,
           latestValueLabel: formatKes(goalBased + pensionLinked.total),
+          quarterBoundaryLabel: txnQBoundary,
         },
       },
     ],

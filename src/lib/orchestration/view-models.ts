@@ -15,6 +15,7 @@ export interface TrendSeries {
   rawValues: number[]; // actual metric values per bucket — Recharts scales automatically
   monthLabels: string[];
   latestValueLabel: string;
+  quarterBoundaryLabel?: string; // if set, draw a vertical boundary line at this X-axis label
 }
 
 export interface BulletRow {

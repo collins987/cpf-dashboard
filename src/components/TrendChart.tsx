@@ -7,6 +7,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
 import { SUBSIDIARY_COLORS } from "./colors";
@@ -87,6 +88,21 @@ export function TrendChart({ series }: TrendChartProps) {
             labelStyle={{ color: "#374151", fontWeight: 600 }}
             cursor={{ stroke: color.hex, strokeWidth: 1, strokeDasharray: "4 2" }}
           />
+          {series.quarterBoundaryLabel && (
+            <ReferenceLine
+              x={series.quarterBoundaryLabel}
+              stroke="#D1D5DB"
+              strokeWidth={1}
+              strokeDasharray="4 3"
+              label={{
+                value: "↑ New Q",
+                position: "insideTopLeft",
+                fontSize: 9,
+                fill: "#9AA3AE",
+                fontFamily: "inherit",
+              }}
+            />
+          )}
           <Area
             type="monotone"
             dataKey="value"
