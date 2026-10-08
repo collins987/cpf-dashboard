@@ -61,10 +61,25 @@ const NAV_LABELS = {
   about: "About",
 } as const;
 
+// Nav links now have target="_blank" (Phase 5 WS2) — clicking them opens new
+// tabs rather than navigating the current page. All tests that previously
+// relied on clickNav for same-page navigation now use page.goto() instead.
+const NAV_ROUTES: Record<string, string> = {
+  [NAV_LABELS.rukisha]: "/rukisha",
+  [NAV_LABELS.cpffs]: "/cpf-financial-services",
+  [NAV_LABELS.cpfca]: "/cpf-capital-advisory",
+  [NAV_LABELS.group]: "/group",
+  [NAV_LABELS.about]: "/about",
+};
+
 async function clickNav(page: Page, label: string) {
-  // The nav row contains buttons by that exact text; use .first() to prefer
-  // the header button over any footer link duplicating the label.
-  await page.locator(".navrow .navbtn", { hasText: label }).first().click();
+  const route = NAV_ROUTES[label];
+  if (route) {
+    await page.goto(route);
+  } else {
+    // Fallback for labels not in the map (shouldn't happen in practice)
+    await page.locator(".navrow .navbtn", { hasText: label }).first().click();
+  }
 }
 
 async function expectActive(page: Page, label: string) {

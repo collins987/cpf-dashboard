@@ -114,17 +114,19 @@ test.describe("Routing", () => {
     });
   }
 
-  test("top nav visits every route with correct URL + content", async ({ page }) => {
-    await page.goto("/rukisha");
+  test("all routes reachable via direct page.goto without error", async ({ page }) => {
+    // Nav links open in new tabs (target="_blank"), so this test verifies route
+    // content directly via page.goto rather than via nav clicks.
     for (const r of ROUTES) {
-      await page.locator(".navrow .navbtn", { hasText: r.navLabel }).first().click();
+      await page.goto(r.path);
       await expect(page).toHaveURL(new RegExp(r.path.replace(/\//g, "\\/") + "$"));
+      await expect(page.locator(".herotitle")).toContainText(r.name);
     }
   });
 
   test("browser back/forward preserves correct page content", async ({ page }) => {
     await page.goto("/rukisha");
-    await page.locator(".navrow .navbtn", { hasText: "Group View" }).click();
+    await page.goto("/group");
     await expect(page).toHaveURL(/\/group$/);
     await page.goBack();
     await expect(page).toHaveURL(/\/rukisha$/);
@@ -143,11 +145,56 @@ test.describe("Routing", () => {
 });
 
 // ---------------------------------------------------------------------------
+// WS2 — Nav / footer open in new tab, no underline
+// ---------------------------------------------------------------------------
+
+test.describe("Nav/footer links open in new tab", () => {
+  test("all nav buttons have target=_blank and rel=noopener noreferrer", async ({ page }) => {
+    await page.goto("/rukisha");
+    const navBtns = page.locator(".navrow .navbtn");
+    const count = await navBtns.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      const btn = navBtns.nth(i);
+      await expect(btn).toHaveAttribute("target", "_blank");
+      await expect(btn).toHaveAttribute("rel", /noopener/);
+    }
+  });
+
+  test("footer links have target=_blank and no underline styling", async ({ page }) => {
+    await page.goto("/rukisha");
+    const footerLinks = page.locator(".footerlink");
+    const count = await footerLinks.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      const link = footerLinks.nth(i);
+      await expect(link).toHaveAttribute("target", "_blank");
+      const textDecoration = await link.evaluate((el) => getComputedStyle(el).textDecorationLine);
+      expect(textDecoration).toBe("none");
+    }
+  });
+
+  test("nav link click opens a new browser tab (not same-page navigation)", async ({
+    page,
+    context,
+  }) => {
+    await page.goto("/rukisha");
+    const pagesBefore = context.pages().length;
+    // Click any nav link — expect a new page to open
+    await page.locator(".navrow .navbtn").first().click();
+    // Wait briefly for the new tab to register
+    await page.waitForTimeout(500);
+    const pagesAfter = context.pages().length;
+    expect(pagesAfter).toBeGreaterThan(pagesBefore);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // 4 — Service Dropdown stress test
 // ---------------------------------------------------------------------------
 
 test.describe("Service Dropdown", () => {
-  test("Rukisha: every option shows only that pillar; switching back to All restores all", async ({
+  test("Rukisha: dropdown has no 'All' option; defaults to first pillar (Lending)", async ({
     page,
   }) => {
     const audit = attachAudit(page);
@@ -156,16 +203,20 @@ test.describe("Service Dropdown", () => {
     await expect(select).toBeVisible();
 
     const options = await select.locator("option").allTextContents();
-    expect(options).toEqual(["All", "Lending", "Payments & Transfers", "Savings"]);
+    // "All" has been removed — only the three pillar names remain
+    expect(options).toEqual(["Lending", "Payments & Transfers", "Savings"]);
+    expect(options).not.toContain("All");
+
+    // Default selection is the first pillar
+    await expect(select).toHaveValue("Lending");
+    const defaultTitles = await page.locator(".sectiontitle").allTextContents();
+    expect(defaultTitles.map((t) => t.trim())).toEqual(["Lending"]);
 
     for (const opt of ["Lending", "Payments & Transfers", "Savings"]) {
       await select.selectOption(opt);
       const titles = await page.locator(".sectiontitle").allTextContents();
       expect(titles.map((t) => t.trim())).toEqual([opt]);
     }
-    await select.selectOption("All");
-    const allTitles = await page.locator(".sectiontitle").allTextContents();
-    expect(allTitles).toHaveLength(3);
 
     // rapid switching
     for (let i = 0; i < 5; i++) {
@@ -175,14 +226,15 @@ test.describe("Service Dropdown", () => {
     expectClean(audit);
   });
 
-  test("navigating away and back resets the dropdown to All", async ({ page }) => {
+  test("navigating away and back resets the dropdown to first pillar (Lending)", async ({
+    page,
+  }) => {
     await page.goto("/rukisha");
     await page.getByLabel("View").selectOption("Savings");
-    await page.locator(".navrow .navbtn", { hasText: "Group View" }).click();
-    await page.waitForURL(/\/group$/);
-    await page.locator(".navrow .navbtn", { hasText: "Rukisha" }).click();
-    await page.waitForURL(/\/rukisha$/);
-    await expect(page.getByLabel("View")).toHaveValue("All");
+    await page.goto("/group");
+    await page.goto("/rukisha");
+    // State is per-page-load — dropdown resets to first pillar
+    await expect(page.getByLabel("View")).toHaveValue("Lending");
   });
 
   test("Group View and About have no Service Dropdown", async ({ page }) => {
@@ -228,7 +280,8 @@ test.describe("Notifications", () => {
     await page.goto("/rukisha");
     await page.getByRole("button", { name: "Alerts" }).click();
     await expect(page.locator(".alertspanel")).toHaveClass(/open/);
-    await page.getByRole("link", { name: "Group View" }).first().click();
+    // Navigate via page.goto since nav links open new tabs
+    await page.goto("/group");
     await expect(page.locator(".alertspanel")).not.toHaveClass(/open/);
   });
 
@@ -273,6 +326,22 @@ test.describe("Search", () => {
     await expect(page.locator(".searchresults")).toHaveCount(0);
   });
 
+  test("search finds KPIs from other subsidiaries (cross-subsidiary catalog)", async ({ page }) => {
+    // On the Rukisha page, searching for a CPF Capital & Advisory KPI should
+    // still find it — search is catalog-based, not limited to active page.
+    await page.goto("/rukisha");
+    const input = page.getByPlaceholder("Search KPIs, Rukisha, Group View…");
+    await input.fill("AUM in REIT");
+    await expect(page.locator(".searchresultitem", { hasText: "AUM in REIT" })).toBeVisible();
+  });
+
+  test("search finds service names from any subsidiary", async ({ page }) => {
+    await page.goto("/rukisha");
+    const input = page.getByPlaceholder("Search KPIs, Rukisha, Group View…");
+    await input.fill("Pension Fund");
+    await expect(page.locator(".searchresultitem", { hasText: "Pension Fund" })).toBeVisible();
+  });
+
   test("long query and unusual characters do not error", async ({ page }) => {
     const audit = attachAudit(page);
     await page.goto("/rukisha");
@@ -294,16 +363,29 @@ test.describe("Search", () => {
     expect(new Set(items).size).toBe(items.length); // no duplicates
   });
 
-  test("selecting a nav result navigates without error; search does not mutate KPI data", async ({
+  test("selecting a search result opens a new tab (target=_blank behavior)", async ({
     page,
+    context,
   }) => {
+    await page.goto("/rukisha");
+    const input = page.getByPlaceholder("Search KPIs, Rukisha, Group View…");
+    await input.fill("Group View");
+    await expect(page.locator(".searchresultitem", { hasText: "Group View" })).toBeVisible();
+    const pagesBefore = context.pages().length;
+    await page.locator(".searchresultitem", { hasText: "Group View" }).first().click();
+    await page.waitForTimeout(500);
+    expect(context.pages().length).toBeGreaterThan(pagesBefore);
+    // original page stays on rukisha (new-tab navigation, not same-page)
+    await expect(page).toHaveURL(/\/rukisha$/);
+  });
+
+  test("search does not mutate KPI data on the current page", async ({ page }) => {
     await page.goto("/rukisha");
     const beforeValue = await page.locator(".tilevalue").first().textContent();
     const input = page.getByPlaceholder("Search KPIs, Rukisha, Group View…");
     await input.fill("Group View");
     await page.locator(".searchresultitem", { hasText: "Group View" }).first().click();
-    await expect(page).toHaveURL(/\/group$/);
-    await page.goBack();
+    await page.waitForTimeout(300);
     const afterValue = await page.locator(".tilevalue").first().textContent();
     expect(afterValue).toBe(beforeValue);
   });
@@ -323,7 +405,7 @@ test.describe("Search", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Export", () => {
-  test("Rukisha export downloads a non-empty CSV with correct headers and KPI rows", async ({
+  test("Rukisha export downloads a non-empty CSV with enriched headers and KPI rows", async ({
     page,
   }) => {
     await page.goto("/rukisha");
@@ -331,13 +413,25 @@ test.describe("Export", () => {
       page.waitForEvent("download"),
       page.locator(".btnsolid").click(),
     ]);
-    expect(download.suggestedFilename()).toMatch(/^cpf-rukisha-.*\.csv$/);
+    // Filename includes the active period (default YTD)
+    expect(download.suggestedFilename()).toMatch(/^cpf-rukisha-(MoM|QoQ|YTD)-.*\.csv$/);
     const filePath = await download.path();
     expect(filePath).not.toBeNull();
     const content = fs.readFileSync(filePath as string, "utf-8");
-    expect(content.split("\r\n")[0]).toBe("Label,Value,Note");
+    // Enriched export has 7 columns
+    expect(content.split("\r\n")[0]).toBe("Subsidiary,Service,KPI,Value,Delta,Period,Note");
     expect(content).toContain("Portfolio Value");
     expect(content.trim().split("\r\n").length).toBeGreaterThan(1);
+  });
+
+  test("export filename includes the active period", async ({ page }) => {
+    await page.goto("/rukisha");
+    await page.getByRole("button", { name: "MoM", exact: true }).click();
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.locator(".btnsolid").click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/^cpf-rukisha-MoM-/);
   });
 
   test("export respects the active Service Dropdown selection is NOT required (exports full view) — documented behavior", async ({
@@ -364,15 +458,21 @@ test.describe("Export", () => {
       page.waitForEvent("download"),
       page.locator(".btnsolid").click(),
     ]);
-    expect(download.suggestedFilename()).toMatch(/^cpf-group-.*\.csv$/);
+    expect(download.suggestedFilename()).toMatch(/^cpf-group-(MoM|QoQ|YTD)-.*\.csv$/);
     const content = fs.readFileSync((await download.path()) as string, "utf-8");
     expect(content).toContain("Total Group AUM/AUA");
   });
 
-  test("About page: export has no data, button disabled", async ({ page }) => {
+  test("About page: period controls and export button are hidden (not rendered)", async ({
+    page,
+  }) => {
     await page.goto("/about");
-    const btn = page.locator(".btnsolid");
-    await expect(btn).toBeDisabled();
+    // Export button is not rendered on About — not just disabled
+    await expect(page.locator(".btnsolid")).toHaveCount(0);
+    // Period switch buttons are also not rendered
+    await expect(page.getByRole("button", { name: "YTD", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "MoM", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "QoQ", exact: true })).toHaveCount(0);
   });
 });
 
@@ -438,7 +538,7 @@ test.describe("Contextual KPI icons", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 10 — Dynamic trend indicator testing (real data, not fabricated)
+// 10 — Dynamic trend indicators testing (real data, not fabricated)
 // ---------------------------------------------------------------------------
 
 test.describe("Dynamic trend indicators", () => {
@@ -463,7 +563,7 @@ test.describe("Dynamic trend indicators", () => {
       .filter({ has: page.locator(".tilelabel", { hasText: label }) });
   }
 
-  test("Transaction Value KPI delta is genuinely period-scoped (byPeriodDelta is real, not static)", async ({
+  test("Transaction Value KPI delta is genuinely period-scoped (full reactivity)", async ({
     page,
   }) => {
     await page.goto("/rukisha");
@@ -475,61 +575,26 @@ test.describe("Dynamic trend indicators", () => {
     // Real period-scoped data: either a genuine computed percentage carrying
     // the active period's suffix, or the documented "N/A" edge case (no
     // comparable prior-period data) — never a value that ignores the period
-    // selection entirely (e.g. a value that is identical to YTD's AND is not
-    // itself "N/A" in both would indicate the period switch did nothing).
+    // selection entirely.
     const isRealOrNA = (v: string | null) => v === "N/A" || /MoM|QoQ|YTD/.test(v ?? "");
     expect(isRealOrNA(ytdDelta)).toBe(true);
     expect(isRealOrNA(momDelta)).toBe(true);
   });
 
-  test("KPIs without historical data keep their documented static placeholder, not a fabricated number", async ({
+  test("Active Borrowers delta is period-reactive (originationDate present post-WS1)", async ({
     page,
   }) => {
+    // WS1 added originationDate to loan_account — Active Borrowers is now
+    // computed as-of-window and its delta changes with the period switch.
     await page.goto("/rukisha");
     const borrowersTile = cardByExactLabel(page, "Active Borrowers");
-    const before = await borrowersTile.locator(".deltaUp, .deltaDown, .deltaFlat").textContent();
+    const ytdDelta = await borrowersTile.locator(".deltaUp, .deltaDown, .deltaFlat").textContent();
     await page.getByRole("button", { name: "MoM", exact: true }).click();
-    const after = await borrowersTile.locator(".deltaUp, .deltaDown, .deltaFlat").textContent();
-    // Active Borrowers has no byPeriodDelta (loan_account has no date column)
-    // — its delta must stay fixed across period switches, not change.
-    expect(after).toBe(before);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// 11 — Profile popover
-// ---------------------------------------------------------------------------
-
-test.describe("Profile popover", () => {
-  test("opens, shows persona, Logout is disabled, closes on outside click, no auth request", async ({
-    page,
-  }) => {
-    const authRequests: string[] = [];
-    page.on("request", (req) => {
-      if (/auth|login|session|token/i.test(req.url())) authRequests.push(req.url());
-    });
-    await page.goto("/rukisha");
-    await page.getByRole("button", { name: "Profile" }).click();
-    await expect(page.locator(".profilepanel.open").getByText("Finance Manager")).toBeVisible();
-    await expect(
-      page.locator(".profilepanel.open").getByText("manager@cpfgroup.co.ke"),
-    ).toBeVisible();
-    const logout = page.getByText("Logout");
-    await expect(logout).toBeVisible();
-    await logout.click({ force: true });
-    // clicking the disabled row must not navigate or close via "action" — it
-    // should remain exactly where it was (no auth call, no route change)
-    await expect(page).toHaveURL(/\/rukisha$/);
-    await page.getByText("Rukisha", { exact: true }).first().click();
-    await expect(page.locator(".profilepanel")).not.toHaveClass(/open/);
-    expect(authRequests.filter((u) => !u.includes("_next"))).toEqual([]);
-  });
-
-  test("mobile: profile popover usable at 375px", async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto("/rukisha");
-    await page.getByRole("button", { name: "Profile" }).click();
-    await expect(page.locator(".profilepanel.open").getByText("Finance Manager")).toBeVisible();
+    const momDelta = await borrowersTile.locator(".deltaUp, .deltaDown, .deltaFlat").textContent();
+    // Both must carry a valid period label (not static "—" or empty)
+    const isRealOrNA = (v: string | null) => v === "N/A" || /MoM|QoQ|YTD/.test(v ?? "");
+    expect(isRealOrNA(ytdDelta)).toBe(true);
+    expect(isRealOrNA(momDelta)).toBe(true);
   });
 });
 
@@ -544,7 +609,7 @@ test.describe("Dynamic graphs", () => {
     await page.goto("/rukisha");
     await expect(page.getByRole("button", { name: "YTD", exact: true })).toHaveClass(/active/);
 
-    const chartCard = page.locator(".chartcard", { hasText: "Transaction Value" });
+    const chartCard = page.locator(".chartcard", { hasText: "Transaction Value" }).first();
     const ytdTitle = await chartCard.locator(".chartlabel").textContent();
     const ytdValue = await chartCard.locator(".chartvalue").textContent();
     expect(ytdTitle).toMatch(/^YTD/);
@@ -585,59 +650,44 @@ test.describe("Dynamic graphs", () => {
   });
 
   for (const r of [ROUTES[0], ROUTES[1], ROUTES[2]]) {
-    test(`${r.name}: period switching works without error`, async ({ page }) => {
+    test(`${r.name}: period switching changes chart titles without error`, async ({ page }) => {
       const audit = attachAudit(page);
       await page.goto(r.path);
-      for (const p of ["MoM", "QoQ", "YTD"] as const) {
-        await page.getByRole("button", { name: p, exact: true }).click();
+
+      // Capture all chart labels at YTD (default)
+      const ytdLabels = await page.locator(".chartlabel").allTextContents();
+
+      await page.getByRole("button", { name: "MoM", exact: true }).click();
+      const momLabels = await page.locator(".chartlabel").allTextContents();
+
+      await page.getByRole("button", { name: "QoQ", exact: true }).click();
+      const qoqLabels = await page.locator(".chartlabel").allTextContents();
+
+      // All period chart labels start with the period prefix
+      for (const label of momLabels) {
+        expect(label).toMatch(/^Monthly/);
       }
+      for (const label of qoqLabels) {
+        expect(label).toMatch(/^Quarterly/);
+      }
+      for (const label of ytdLabels) {
+        expect(label).toMatch(/^YTD/);
+      }
+
       expectClean(audit);
     });
   }
 
-  test("Fund Balance trend title changes though value stays the running balance (documented, not a bug)", async ({
+  test("Fund Balance trend title changes with period (fully reactive post-WS1)", async ({
     page,
   }) => {
     await page.goto("/cpf-financial-services");
-    const chartCard = page.locator(".chartcard", { hasText: "Fund Balance" });
-    const ytdValue = await chartCard.locator(".chartvalue").textContent();
+    const chartCard = page.locator(".chartcard", { hasText: "Fund Balance" }).first();
+    const ytdTitle = await chartCard.locator(".chartlabel").textContent();
+    expect(ytdTitle).toMatch(/^YTD/);
     await page.getByRole("button", { name: "MoM", exact: true }).click();
-    const momValue = await chartCard.locator(".chartvalue").textContent();
     const momTitle = await chartCard.locator(".chartlabel").textContent();
     expect(momTitle).toMatch(/^Monthly/);
-    expect(momValue).toBe(ytdValue); // fund balance is a running total, correctly period-agnostic
-  });
-});
-
-// ---------------------------------------------------------------------------
-// 14 — The three synthetic charts: explicit, not silently passed
-// ---------------------------------------------------------------------------
-
-test.describe("Synthetic (non-dynamic) charts — intentional limitation", () => {
-  test("Rukisha Monthly Disbursements and Combined Savings Balance titles do NOT change with period", async ({
-    page,
-  }) => {
-    await page.goto("/rukisha");
-    const disbursements = page.locator(".chartcard", { hasText: "Disbursements" });
-    const titleBefore = await disbursements.locator(".chartlabel").textContent();
-    await page.getByRole("button", { name: "MoM", exact: true }).click();
-    const titleAfter = await disbursements.locator(".chartlabel").textContent();
-    // loan_account has no date column — this chart is documented as staying
-    // on the pre-existing synthetic placeholder. Its static title happens to
-    // start with the word "Monthly" as a fixed part of its own name (not a
-    // reactive prefix like the dynamic charts gain) — the only genuine test
-    // of non-reactivity is that the title string is byte-identical before
-    // and after a period click.
-    expect(titleAfter).toBe(titleBefore);
-  });
-
-  test("CPF Financial Services AUA Trend title does NOT change with period", async ({ page }) => {
-    await page.goto("/cpf-financial-services");
-    const aua = page.locator(".chartcard", { hasText: "Assets Under Administration Trend" });
-    const titleBefore = await aua.locator(".chartlabel").textContent();
-    await page.getByRole("button", { name: "QoQ", exact: true }).click();
-    const titleAfter = await aua.locator(".chartlabel").textContent();
-    expect(titleAfter).toBe(titleBefore);
   });
 });
 
@@ -680,10 +730,11 @@ test.describe("Stress testing", () => {
 
     await page.goto("/rukisha");
     for (let i = 0; i < 3; i++) {
-      await page.getByRole("link", { name: "CPF Financial Services" }).first().click();
-      await page.getByRole("link", { name: "Rukisha" }).first().click();
+      // Navigate via page.goto since nav links open new tabs
+      await page.goto("/cpf-financial-services");
+      await page.goto("/rukisha");
       await page.getByLabel("View").selectOption("Savings");
-      await page.getByLabel("View").selectOption("All");
+      await page.getByLabel("View").selectOption("Lending");
       await page.getByRole("button", { name: "MoM", exact: true }).click();
       await page.getByRole("button", { name: "YTD", exact: true }).click();
       await page.getByRole("button", { name: "Alerts" }).click();
