@@ -243,7 +243,6 @@ function buildCpfcaViewForPeriod(
             deltaDirection: (latestSubscriptionRate ?? 0) >= 1 ? "up" : "down",
           },
         ],
-        bullets,
         trend: {
           label: `${w.label} Issuance Value (KES B)`,
           color: "cpfca",
