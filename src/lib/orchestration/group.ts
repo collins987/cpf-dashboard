@@ -7,22 +7,22 @@ import {
 import { getPensionLinkSummary } from "@/lib/data/group-queries";
 import { formatKes, formatNumber, formatPercent } from "@/lib/format";
 import type { GroupView, SubsidiaryTotals } from "./view-models";
+import type { Period } from "@/lib/calculations/period";
 
-export async function getGroupView(args: {
-  rukisha: SubsidiaryTotals;
-  cpffs: SubsidiaryTotals;
-  cpfca: SubsidiaryTotals;
-}): Promise<GroupView> {
-  const { rukisha, cpffs, cpfca } = args;
-  const pensionLinkSummary = await getPensionLinkSummary();
-
+function buildGroupViewForPeriod(
+  rukisha: SubsidiaryTotals,
+  cpffs: SubsidiaryTotals,
+  cpfca: SubsidiaryTotals,
+  link: ReturnType<typeof getLatestPensionLinkSummary>,
+  period: Period,
+): GroupView {
   const snapshot = [
     {
       name: "Rukisha",
       color: "rukisha" as const,
       headlineAum: formatKes(rukisha.headlineAum),
       activeClients: formatNumber(rukisha.activeClients),
-      deltaLabel: "▲ 6.8% avg growth",
+      deltaLabel: `${period} period`,
       headlineAumCalc: "Portfolio Value + Goal-Based Savings + Pension-Linked Savings.",
       activeClientsCalc: "Active wallets with ≥1 transaction this period.",
     },
@@ -31,7 +31,7 @@ export async function getGroupView(args: {
       color: "cpffs" as const,
       headlineAum: formatKes(cpffs.headlineAum),
       activeClients: formatNumber(cpffs.activeClients),
-      deltaLabel: "▲ 3.7% avg growth",
+      deltaLabel: `${period} period`,
       headlineAumCalc: "Fund Balance + Assets Under Administration (Trust).",
       activeClientsCalc: "Distinct members in active pension schemes.",
     },
@@ -40,13 +40,11 @@ export async function getGroupView(args: {
       color: "cpfca" as const,
       headlineAum: formatKes(cpfca.headlineAum),
       activeClients: formatNumber(cpfca.activeClients),
-      deltaLabel: "▲ 8.7% avg growth",
+      deltaLabel: `${period} period`,
       headlineAumCalc: "AUM in REIT Vehicles + Deal Value (YTD) + Issuance Value (YTD).",
       activeClientsCalc: "Distinct REIT unit holders.",
     },
   ];
-
-  const link = getLatestPensionLinkSummary(pensionLinkSummary);
 
   const flow = [
     {
@@ -102,10 +100,32 @@ export async function getGroupView(args: {
     {
       label: "Group Transaction/Deal Value",
       value: formatKes(totalTransactionValue),
-      note: "Current period, all business lines",
+      note: `${period} period, all business lines`,
     },
     { label: "Business Lines", value: "3", note: "Lending, pensions, capital markets" },
   ];
 
   return { snapshot, flow, scorecard };
+}
+
+export async function getGroupView(args: {
+  rukisha: Record<Period, SubsidiaryTotals>;
+  cpffs: Record<Period, SubsidiaryTotals>;
+  cpfca: Record<Period, SubsidiaryTotals>;
+}): Promise<Record<Period, GroupView>> {
+  const { rukisha, cpffs, cpfca } = args;
+  const pensionLinkSummary = await getPensionLinkSummary();
+  const link = getLatestPensionLinkSummary(pensionLinkSummary);
+
+  const views = {} as Record<Period, GroupView>;
+  for (const period of ["MoM", "QoQ", "YTD"] as Period[]) {
+    views[period] = buildGroupViewForPeriod(
+      rukisha[period],
+      cpffs[period],
+      cpfca[period],
+      link,
+      period,
+    );
+  }
+  return views;
 }

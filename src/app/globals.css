@@ -17,6 +17,7 @@ body {
 
 a {
   color: inherit;
+  text-decoration: none;
 }
 
 .serif {
@@ -88,6 +89,7 @@ a {
   cursor: pointer;
   white-space: nowrap;
   font-family: var(--font-body), sans-serif;
+  text-decoration: none;
 }
 
 .navbtn:hover {
@@ -237,11 +239,11 @@ a {
 }
 
 .hero {
-  padding: 28px 40px 20px;
+  padding: 16px 40px 12px;
   border-bottom: 1px solid #eef0f3;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .eyebrow {
@@ -253,7 +255,7 @@ a {
 }
 
 .herotitle {
-  font-size: 34px;
+  font-size: 26px;
   font-weight: 700;
   color: #0f1f35;
   line-height: 1.15;
@@ -274,7 +276,7 @@ a {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 10px;
+  margin-top: 6px;
   align-items: center;
 }
 
@@ -346,10 +348,10 @@ a {
 }
 
 .content {
-  padding: 28px 40px 24px;
+  padding: 16px 40px 16px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 16px;
 }
 
 .tag {
@@ -398,7 +400,7 @@ a {
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 20px;
+  padding: 14px;
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }
 
@@ -561,16 +563,8 @@ a {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-width: 66%;
-  margin-left: auto;
-  margin-right: auto;
   width: 100%;
-}
-
-@media (max-width: 860px) {
-  .chartcard {
-    max-width: 100%;
-  }
+  padding: 10px;
 }
 
 .chartheadrow {
@@ -882,7 +876,7 @@ a {
 
 .footer {
   background: #0f1f35;
-  margin-top: 32px;
+  margin-top: 20px;
 }
 
 .footerlogochip {
@@ -904,7 +898,7 @@ a {
 .footerinner {
   max-width: 1560px;
   margin: 0 auto;
-  padding: 40px 40px 24px;
+  padding: 24px 40px 16px;
   display: flex;
   gap: 40px;
   flex-wrap: wrap;
@@ -954,6 +948,7 @@ a {
   text-align: left;
   cursor: pointer;
   font-family: var(--font-body), sans-serif;
+  text-decoration: none;
 }
 
 .footerlink:hover {
@@ -1118,4 +1113,207 @@ a {
   .bulletname {
     font-size: 11px;
   }
+
+  .profilepanel,
+  .searchresults {
+    right: -18px;
+  }
+}
+
+/* ===========================================================================
+   Phase 5 Extended UI Enhancements — Service Dropdown, Profile popover,
+   functional Search, delta arrow icons.
+   =========================================================================== */
+
+.servicedropdown {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.servicedropdownlabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5b6472;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.servicedropdownwrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.servicedropdownselect {
+  appearance: none;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 32px 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f1f35;
+  cursor: pointer;
+  font-family: var(--font-body), sans-serif;
+}
+
+.servicedropdownchev {
+  position: absolute;
+  right: 8px;
+  pointer-events: none;
+  width: 14px;
+  height: 14px;
+}
+
+.profilewrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.avatarbtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+}
+
+.profilepanel {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 46px;
+  width: 220px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  z-index: 50;
+  text-align: left;
+  padding: 14px 16px;
+}
+
+.profilepanel.open {
+  display: block;
+}
+
+.profilename {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f1f35;
+}
+
+.profileemail {
+  font-size: 11px;
+  color: #8b93a1;
+  margin-top: 2px;
+}
+
+.profiledivider {
+  height: 1px;
+  background: #eef0f3;
+  margin: 10px 0;
+}
+
+.profilerow {
+  font-size: 13px;
+  color: #3a4150;
+  padding: 6px 0;
+}
+
+.profilerow-disabled {
+  color: #c3cedb;
+  cursor: not-allowed;
+}
+
+.searchwrap {
+  position: relative;
+  flex: 1 1 220px;
+  max-width: 300px;
+}
+
+.searchinput {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  color: #3a4150;
+  width: 100%;
+  font-family: var(--font-body), sans-serif;
+}
+
+.searchinput::placeholder {
+  color: #8b93a1;
+}
+
+.searchresults {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  width: 100%;
+  min-width: 260px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.searchresultitem {
+  display: block;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #3a4150;
+  text-decoration: none;
+  border-bottom: 1px solid #f1f3f6;
+}
+
+.searchresultitem:last-child {
+  border-bottom: none;
+}
+
+.searchresultitem:hover {
+  background: #f7f8fa;
+}
+
+.searchresultitem-static {
+  color: #5b6472;
+  cursor: default;
+}
+
+.searchempty {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #8b93a1;
+}
+
+.deltaUp svg,
+.deltaDown svg,
+.deltaFlat svg {
+  flex: 0 0 auto;
+}
+
+/* Search result type badge */
+.searchresulttype {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9aa3ae;
+  background: #f1f3f6;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-right: 7px;
+}
+
+/* Chart card sits below the KPI tile grid — give it a subtle border to match card styling */
+.chartcard {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
 }

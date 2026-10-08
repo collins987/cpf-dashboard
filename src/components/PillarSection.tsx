@@ -10,20 +10,30 @@ interface PillarSectionProps {
   color: SubsidiaryColorKey;
 }
 
-/** One pillar: a section title, its KPI tile grid, and its chart (trend or bullet). */
 export function PillarSection({ pillar, color }: PillarSectionProps) {
+  const hasTrend = !!pillar.trend;
   return (
     <>
       <span className="sectiontitle serif">
         <span className="dot" style={{ background: SUBSIDIARY_COLORS[color].hex }} />
         {pillar.title}
       </span>
-      <div className="tilegrid">
-        {pillar.kpis.map((kpi) => (
-          <KpiTile key={kpi.label} kpi={kpi} calculation={KPI_CALCULATIONS[kpi.label] ?? ""} />
-        ))}
-      </div>
-      {pillar.trend ? <TrendChart series={pillar.trend} /> : null}
+      {hasTrend ? (
+        <>
+          <div className="tilegrid">
+            {pillar.kpis.map((kpi) => (
+              <KpiTile key={kpi.label} kpi={kpi} calculation={KPI_CALCULATIONS[kpi.label] ?? ""} />
+            ))}
+          </div>
+          <TrendChart series={pillar.trend!} />
+        </>
+      ) : (
+        <div className="tilegrid">
+          {pillar.kpis.map((kpi) => (
+            <KpiTile key={kpi.label} kpi={kpi} calculation={KPI_CALCULATIONS[kpi.label] ?? ""} />
+          ))}
+        </div>
+      )}
       {pillar.bullets ? (
         <BulletChart
           title="Subscription Rate by Issuance"

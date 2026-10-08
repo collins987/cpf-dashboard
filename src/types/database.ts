@@ -19,6 +19,7 @@ export interface LoanAccountRow {
   outstandingBalance: number;
   daysOverdue: number;
   status: "active" | "closed" | "written_off";
+  originationDate: string;
 }
 
 export interface RepaymentRow {
@@ -44,6 +45,7 @@ export interface WalletRow {
   subsidiaryId: Subsidiary;
   status: "active" | "dormant";
   lastTransactionAt: string | null;
+  openedDate: string;
 }
 
 export interface SavingsAccountRow {
@@ -52,6 +54,7 @@ export interface SavingsAccountRow {
   accountHolderId: string;
   savingsType: "goal_based" | "pension_linked";
   balance: number;
+  openedDate: string;
 }
 
 // ---------- CPF Financial Services ----------
@@ -60,12 +63,14 @@ export interface PensionSchemeRow {
   id: string;
   subsidiaryId: Subsidiary;
   status: "active" | "closed";
+  openedDate: string;
 }
 
 export interface SchemeMemberRow {
   id: string;
   pensionSchemeId: string;
   memberId: string;
+  joinedDate: string;
 }
 
 export interface ContributionRow {
@@ -96,18 +101,21 @@ export interface TrustAccountRow {
   subsidiaryId: Subsidiary;
   trustAssetValue: number;
   status: "active" | "closed";
+  openedDate: string;
 }
 
 export interface TrustBeneficiaryRow {
   id: string;
   trustAccountId: string;
   beneficiaryId: string;
+  addedDate: string;
 }
 
 export interface AgencyMandateRow {
   id: string;
   subsidiaryId: Subsidiary;
   principalId: string;
+  startedDate: string;
 }
 
 export interface AgencyTransactionRow {
@@ -132,6 +140,7 @@ export interface ReitHoldingRow {
   subsidiaryId: Subsidiary;
   holderId: string;
   unitBalance: number;
+  acquiredDate: string;
 }
 
 export interface ReitNavHistoryRow {

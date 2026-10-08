@@ -12,7 +12,7 @@ export interface Kpi {
 export interface TrendSeries {
   label: string;
   color: "rukisha" | "cpffs" | "cpfca";
-  points: number[]; // 6 points, already scaled 0-100 for the sparkline
+  rawValues: number[]; // actual metric values per bucket — Recharts scales automatically
   monthLabels: string[];
   latestValueLabel: string;
 }

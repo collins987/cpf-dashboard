@@ -20,40 +20,83 @@ import {
   getIssuancesYtd,
 } from "@/lib/data/cpf-capital-advisory-queries";
 import { formatKes, formatKesExact, formatNumber, formatPercent } from "@/lib/format";
-import { syntheticTrend } from "./trend";
+import { buildMonthlyTrend, formatPeriodDelta } from "./monthly-trend";
+import { getPeriodWindow, periodDeltaPct, asOfWindow, inWindow } from "@/lib/calculations/period";
+import type { Period } from "@/lib/calculations/period";
 import type { SubsidiaryView, SubsidiaryTotals, BulletRow } from "./view-models";
 
-const YEAR_START = "2026-01-01";
+const YEAR_START = new Date(new Date().getFullYear(), 0, 1).toISOString().split("T")[0];
 
-export async function getCpfCapitalAdvisoryView(): Promise<{
-  view: SubsidiaryView;
-  totals: SubsidiaryTotals;
-}> {
-  const [reitHoldings, reitNavHistory, reitDistributions, deals, issuances] = await Promise.all([
-    getReitHoldings(),
-    getReitNavHistory(),
-    getReitDistributions(),
-    getDealsYtd(YEAR_START),
-    getIssuancesYtd(YEAR_START),
-  ]);
+function buildCpfcaViewForPeriod(
+  reitHoldings: Awaited<ReturnType<typeof getReitHoldings>>,
+  reitNavHistory: Awaited<ReturnType<typeof getReitNavHistory>>,
+  reitDistributions: Awaited<ReturnType<typeof getReitDistributions>>,
+  deals: Awaited<ReturnType<typeof getDealsYtd>>,
+  issuances: Awaited<ReturnType<typeof getIssuancesYtd>>,
+  navTrend: ReturnType<typeof buildMonthlyTrend>,
+  dealTrend: ReturnType<typeof buildMonthlyTrend>,
+  issuanceTrend: ReturnType<typeof buildMonthlyTrend>,
+  period: Period,
+  now: Date,
+): { view: SubsidiaryView; totals: SubsidiaryTotals } {
+  const w = getPeriodWindow(period, now);
 
+  // Stock metrics: as-of window end
+  const holdingsAsOf = asOfWindow(reitHoldings, (h) => h.acquiredDate, w.end);
+  const holdingsAsOfPrior = asOfWindow(reitHoldings, (h) => h.acquiredDate, w.priorEnd);
+
+  // Flow metrics: in-window
+  const dealsPeriod = inWindow(deals, (d) => d.closeDate, w.start, w.end);
+  const dealsPrior = inWindow(deals, (d) => d.closeDate, w.priorStart, w.priorEnd);
+  const issuancesPeriod = inWindow(issuances, (i) => i.issueDate, w.start, w.end);
+  const issuancesPrior = inWindow(issuances, (i) => i.issueDate, w.priorStart, w.priorEnd);
+
+  // KPI values
   const latestNav = getLatestUnitNav(reitNavHistory) ?? 0;
-  const reitAum = calculateReitAum(reitHoldings, latestNav);
-  const unitHolders = calculateUnitHolders(reitHoldings);
+  const reitAum = calculateReitAum(holdingsAsOf, latestNav);
+  const reitAumPrior = calculateReitAum(holdingsAsOfPrior, latestNav);
+  const unitHolders = calculateUnitHolders(holdingsAsOf);
+  const unitHoldersPrior = calculateUnitHolders(holdingsAsOfPrior);
   const distributionYield = reitDistributions[0]
     ? calculateDistributionYield(reitDistributions[0])
     : null;
 
-  const dealCount = calculateDealCountYtd(deals);
-  const dealValue = calculateDealValueYtd(deals);
+  const dealCount = calculateDealCountYtd(dealsPeriod);
+  const dealCountPrior = calculateDealCountYtd(dealsPrior);
+  const dealValue = calculateDealValueYtd(dealsPeriod);
+  const dealValuePrior = calculateDealValueYtd(dealsPrior);
   const averageDealSize = calculateAverageDealSize(dealValue, dealCount);
-  const advisoryFeeIncome = calculateAdvisoryFeeIncome(deals);
+  const advisoryFeeIncome = calculateAdvisoryFeeIncome(dealsPeriod);
 
-  const issuanceCount = calculateIssuanceCountYtd(issuances);
-  const issuanceValue = calculateIssuanceValueYtd(issuances);
-  const weightedAvgProfitRate = calculateWeightedAvgProfitRate(issuances);
-  const latestIssuance = issuances[issuances.length - 1];
+  const issuanceCount = calculateIssuanceCountYtd(issuancesPeriod);
+  const issuanceCountPrior = calculateIssuanceCountYtd(issuancesPrior);
+  const issuanceValue = calculateIssuanceValueYtd(issuancesPeriod);
+  const issuanceValuePrior = calculateIssuanceValueYtd(issuancesPrior);
+  const weightedAvgProfitRate = calculateWeightedAvgProfitRate(issuancesPeriod);
+  const latestIssuance =
+    issuancesPeriod[issuancesPeriod.length - 1] ?? issuances[issuances.length - 1];
   const latestSubscriptionRate = latestIssuance ? calculateSubscriptionRate(latestIssuance) : null;
+
+  // Deltas
+  const reitAumDelta = formatPeriodDelta(periodDeltaPct(reitAum, reitAumPrior), period);
+  const unitHoldersDelta = formatPeriodDelta(periodDeltaPct(unitHolders, unitHoldersPrior), period);
+  const dealCountDelta = formatPeriodDelta(periodDeltaPct(dealCount, dealCountPrior), period);
+  const dealValueDelta = formatPeriodDelta(periodDeltaPct(dealValue, dealValuePrior), period);
+  const issuanceCountDelta = formatPeriodDelta(
+    periodDeltaPct(issuanceCount, issuanceCountPrior),
+    period,
+  );
+  const issuanceValueDelta = formatPeriodDelta(
+    periodDeltaPct(issuanceValue, issuanceValuePrior),
+    period,
+  );
+
+  const navPeriodData = navTrend.byPeriod[period];
+  const { rawValues: navRawValues, monthLabels: navMonthLabels } = navPeriodData;
+  const dealPeriodData = dealTrend.byPeriod[period];
+  const { rawValues: dealRawValues, monthLabels: dealMonthLabels } = dealPeriodData;
+  const issuancePeriodData = issuanceTrend.byPeriod[period];
+  const { rawValues: issuanceRawValues, monthLabels: issuanceMonthLabels } = issuancePeriodData;
 
   const SCALE_MAX = 1.3;
   const bullets: BulletRow[] = issuances.map((issuance) => {
@@ -81,34 +124,34 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
             label: "AUM in REIT Vehicles",
             value: formatKes(reitAum),
             exactValue: formatKesExact(reitAum),
-            deltaLabel: "▲ 7.9% (6-mo)",
-            deltaDirection: "up",
+            deltaLabel: reitAumDelta.deltaLabel,
+            deltaDirection: reitAumDelta.deltaDirection,
           },
           {
             label: "Unit Holders",
             value: formatNumber(unitHolders),
-            deltaLabel: "▲ 4.5% (6-mo)",
-            deltaDirection: "up",
+            deltaLabel: unitHoldersDelta.deltaLabel,
+            deltaDirection: unitHoldersDelta.deltaDirection,
           },
           {
             label: "Unit NAV",
             value: `KES ${latestNav.toFixed(2)}`,
-            deltaLabel: "▲ 8.7% (6-mo)",
-            deltaDirection: "up",
+            deltaLabel: w.label,
+            deltaDirection: "flat",
           },
           {
             label: "Distribution Yield (Annualized)",
             value: formatPercent(distributionYield),
-            deltaLabel: "▲ 0.3pp (6-mo)",
-            deltaDirection: "up",
+            deltaLabel: w.label,
+            deltaDirection: "flat",
           },
         ],
         trend: {
-          label: "Unit NAV Trend (KES)",
+          label: `${w.label} Unit NAV (KES)`,
           color: "cpfca",
-          points: syntheticTrend(31),
-          monthLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-          latestValueLabel: `${latestNav.toFixed(2)} latest`,
+          rawValues: navRawValues,
+          monthLabels: navMonthLabels,
+          latestValueLabel: navPeriodData.latestValueLabel,
         },
       },
       {
@@ -117,38 +160,38 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
           {
             label: "Deal Count (YTD)",
             value: formatNumber(dealCount),
-            deltaLabel: "▲ 2 YTD",
-            deltaDirection: "up",
+            deltaLabel: dealCountDelta.deltaLabel,
+            deltaDirection: dealCountDelta.deltaDirection,
           },
           {
             label: "Deal Value (YTD)",
             value: formatKes(dealValue),
             exactValue: formatKesExact(dealValue),
-            deltaLabel: "▲ 12.4% YTD",
-            deltaDirection: "up",
+            deltaLabel: dealValueDelta.deltaLabel,
+            deltaDirection: dealValueDelta.deltaDirection,
             note: "Incl. Talanta Stadium-type structured deals",
           },
           {
             label: "Average Deal Size",
             value: averageDealSize === null ? "N/A" : formatKes(averageDealSize),
             exactValue: averageDealSize === null ? undefined : formatKesExact(averageDealSize),
-            deltaLabel: "▲ 8.1% YTD",
-            deltaDirection: "up",
+            deltaLabel: w.label,
+            deltaDirection: "flat",
           },
           {
             label: "Advisory Fee Income",
             value: formatKes(advisoryFeeIncome),
             exactValue: formatKesExact(advisoryFeeIncome),
-            deltaLabel: "▲ 9.0% YTD",
-            deltaDirection: "up",
+            deltaLabel: w.label,
+            deltaDirection: "flat",
           },
         ],
         trend: {
-          label: "Cumulative Deal Value YTD (KES B)",
+          label: `${w.label} Deal Value (KES B)`,
           color: "cpfca",
-          points: syntheticTrend(32),
-          monthLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-          latestValueLabel: formatKes(dealValue),
+          rawValues: dealRawValues,
+          monthLabels: dealMonthLabels,
+          latestValueLabel: dealPeriodData.latestValueLabel,
         },
       },
       {
@@ -157,31 +200,38 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
           {
             label: "Issuance Count (YTD)",
             value: formatNumber(issuanceCount),
-            deltaLabel: "▲ 1 YTD",
-            deltaDirection: "up",
+            deltaLabel: issuanceCountDelta.deltaLabel,
+            deltaDirection: issuanceCountDelta.deltaDirection,
           },
           {
             label: "Issuance Value (YTD)",
             value: formatKes(issuanceValue),
             exactValue: formatKesExact(issuanceValue),
-            deltaLabel: "▲ 15.0% YTD",
-            deltaDirection: "up",
+            deltaLabel: issuanceValueDelta.deltaLabel,
+            deltaDirection: issuanceValueDelta.deltaDirection,
             note: "Incl. Linzi Sukuk KDF Housing",
           },
           {
             label: "Weighted Avg. Profit Rate",
             value: formatPercent(weightedAvgProfitRate, 2),
-            deltaLabel: "▲ 0.15pp YTD",
-            deltaDirection: "up",
+            deltaLabel: w.label,
+            deltaDirection: "flat",
           },
           {
             label: "Subscription Rate",
             value: formatPercent(latestSubscriptionRate, 0),
             deltaLabel: (latestSubscriptionRate ?? 0) >= 1 ? "Oversubscribed" : "Below target",
-            deltaDirection: "up",
+            deltaDirection: (latestSubscriptionRate ?? 0) >= 1 ? "up" : "down",
           },
         ],
         bullets,
+        trend: {
+          label: `${w.label} Issuance Value (KES B)`,
+          color: "cpfca",
+          rawValues: issuanceRawValues,
+          monthLabels: issuanceMonthLabels,
+          latestValueLabel: issuancePeriodData.latestValueLabel,
+        },
       },
     ],
   };
@@ -194,3 +244,64 @@ export async function getCpfCapitalAdvisoryView(): Promise<{
 
   return { view, totals };
 }
+
+export async function getCpfCapitalAdvisoryView(): Promise<{
+  views: Record<Period, SubsidiaryView>;
+  totals: Record<Period, SubsidiaryTotals>;
+}> {
+  const now = new Date();
+  const yearStart = new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0];
+  const [reitHoldings, reitNavHistory, reitDistributions, deals, issuances] = await Promise.all([
+    getReitHoldings(),
+    getReitNavHistory(),
+    getReitDistributions(),
+    getDealsYtd(yearStart),
+    getIssuancesYtd(yearStart),
+  ]);
+
+  const navTrend = buildMonthlyTrend(
+    reitNavHistory,
+    (n) => n.period,
+    (n) => n.navPerUnit,
+    (n) => n.toFixed(2),
+    now,
+  );
+  const dealTrend = buildMonthlyTrend(
+    deals,
+    (d) => d.closeDate,
+    (d) => d.dealValue,
+    formatKes,
+    now,
+  );
+  const issuanceTrend = buildMonthlyTrend(
+    issuances,
+    (i) => i.issueDate,
+    (i) => i.issuanceValue,
+    formatKes,
+    now,
+  );
+
+  const views = {} as Record<Period, SubsidiaryView>;
+  const totals = {} as Record<Period, SubsidiaryTotals>;
+  for (const period of ["MoM", "QoQ", "YTD"] as Period[]) {
+    const result = buildCpfcaViewForPeriod(
+      reitHoldings,
+      reitNavHistory,
+      reitDistributions,
+      deals,
+      issuances,
+      navTrend,
+      dealTrend,
+      issuanceTrend,
+      period,
+      now,
+    );
+    views[period] = result.view;
+    totals[period] = result.totals;
+  }
+
+  return { views, totals };
+}
+
+// Keep unused export to satisfy any old imports during transition
+export { YEAR_START as _YEAR_START };

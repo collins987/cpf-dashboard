@@ -33,6 +33,7 @@ export const rukishaLoans: LoanAccountRow[] = Array.from({ length: 260 }, () => 
     outstandingBalance: randomFloat(rand, 5_000, 450_000),
     daysOverdue,
     status: "active",
+    originationDate: "2026-01-15",
   };
 });
 
@@ -54,6 +55,7 @@ export const rukishaWallets: WalletRow[] = Array.from({ length: 600 }, () => ({
   subsidiaryId: "rukisha",
   status: pick(rand, ["active", "active", "active", "dormant"] as const),
   lastTransactionAt: "2026-06-29",
+  openedDate: "2025-10-01",
 }));
 
 const activeWalletIds = rukishaWallets.filter((w) => w.status === "active").map((w) => w.id);
@@ -73,4 +75,5 @@ export const rukishaSavings: SavingsAccountRow[] = Array.from({ length: 500 }, (
   accountHolderId: uuid(rand),
   savingsType: pick(rand, ["goal_based", "goal_based", "pension_linked"] as const),
   balance: randomFloat(rand, 500, 60_000),
+  openedDate: "2025-10-01",
 }));

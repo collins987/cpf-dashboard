@@ -1,23 +1,45 @@
+"use client";
+
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { SUBSIDIARY_COLORS } from "./colors";
 import type { TrendSeries } from "@/lib/orchestration/view-models";
-
-const X_POSITIONS = [0, 80, 160, 240, 320, 400];
-
-/** Maps a 0-100 trend point to the chart's y-coordinate (5 = top/highest, 95 = bottom/lowest). */
-function toY(point: number): number {
-  return 95 - (Math.max(0, Math.min(100, point)) / 100) * 90;
-}
 
 interface TrendChartProps {
   series: TrendSeries;
 }
 
-/** A line/area sparkline with gridlines and point markers — fixed aspect ratio so it never distorts. */
+function formatTick(value: number): string {
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return value.toFixed(value % 1 === 0 ? 0 : 2);
+}
+
 export function TrendChart({ series }: TrendChartProps) {
   const color = SUBSIDIARY_COLORS[series.color];
-  const coords = series.points.map((p, i) => [X_POSITIONS[i], toY(p)] as const);
-  const linePoints = coords.map(([x, y]) => `${x},${y}`).join(" ");
-  const areaPoints = `${linePoints} 400,100 0,100`;
+
+  const data = series.rawValues.map((v, i) => ({
+    name: series.monthLabels[i] ?? `${i + 1}`,
+    value: v,
+  }));
+
+  // Use a tight domain: min slightly below data min, max slightly above data max
+  const values = series.rawValues.filter((v) => v > 0);
+  const dataMin = values.length > 0 ? Math.min(...values) : 0;
+  const dataMax = values.length > 0 ? Math.max(...values) : 1;
+  const padding = (dataMax - dataMin) * 0.15 || dataMax * 0.1 || 1;
+  const yMin = Math.max(0, dataMin - padding);
+  const yMax = dataMax + padding;
+
+  const gradientId = `gradient-${series.color}`;
 
   return (
     <div className="card chartcard">
@@ -27,59 +49,56 @@ export function TrendChart({ series }: TrendChartProps) {
           {series.latestValueLabel}
         </span>
       </div>
-      <svg viewBox="0 0 400 110" width="100%" height={130} style={{ display: "block" }}>
-        <line x1="0" y1="15" x2="400" y2="15" stroke="#F0F1F3" strokeWidth="1" />
-        <line x1="0" y1="50" x2="400" y2="50" stroke="#F0F1F3" strokeWidth="1" />
-        <line x1="0" y1="85" x2="400" y2="85" stroke="#F0F1F3" strokeWidth="1" />
-        <polygon points={areaPoints} fill={color.rgba} stroke="none" />
-        <polyline
-          points={linePoints}
-          fill="none"
-          stroke={color.hex}
-          strokeWidth="7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.12"
-        />
-        <polyline
-          points={linePoints}
-          fill="none"
-          stroke={color.hex}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {coords.map(([x, y], i) =>
-          i === coords.length - 1 ? (
-            <circle
-              key={i}
-              cx={x}
-              cy={y}
-              r="4.5"
-              fill={color.hex}
-              stroke="#FFFFFF"
-              strokeWidth="2"
-            />
-          ) : (
-            <circle
-              key={i}
-              cx={x}
-              cy={y}
-              r="3.5"
-              fill="#FFFFFF"
-              stroke={color.hex}
-              strokeWidth="2"
-            />
-          ),
-        )}
-      </svg>
-      <div className="monthrow">
-        {series.monthLabels.map((m) => (
-          <span key={m} className="monthlabel">
-            {m}
-          </span>
-        ))}
-      </div>
+      <ResponsiveContainer width="100%" height={120}>
+        <AreaChart data={data} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={color.hex} stopOpacity={0.18} />
+              <stop offset="95%" stopColor={color.hex} stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="0" stroke="#F0F1F3" vertical={false} />
+          <XAxis
+            dataKey="name"
+            tick={{ fontSize: 10, fill: "#9AA3AE", fontFamily: "inherit" }}
+            axisLine={false}
+            tickLine={false}
+            dy={4}
+          />
+          <YAxis
+            domain={[yMin, yMax]}
+            tickFormatter={formatTick}
+            tick={{ fontSize: 9, fill: "#9AA3AE", fontFamily: "inherit" }}
+            axisLine={false}
+            tickLine={false}
+            width={44}
+            tickCount={3}
+          />
+          <Tooltip
+            contentStyle={{
+              background: "#fff",
+              border: "1px solid #E5E7EB",
+              borderRadius: 8,
+              fontSize: 12,
+              fontFamily: "inherit",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            }}
+            formatter={(value) => [formatTick(Number(value ?? 0)), series.label]}
+            labelStyle={{ color: "#374151", fontWeight: 600 }}
+            cursor={{ stroke: color.hex, strokeWidth: 1, strokeDasharray: "4 2" }}
+          />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={color.hex}
+            strokeWidth={2}
+            fill={`url(#${gradientId})`}
+            dot={{ r: 3, fill: "#fff", stroke: color.hex, strokeWidth: 1.5 }}
+            activeDot={{ r: 5, fill: color.hex, stroke: "#fff", strokeWidth: 2 }}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 }

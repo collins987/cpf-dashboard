@@ -47,8 +47,11 @@ RUKISHA = "rukisha"
 CPF_FINANCIAL_SERVICES = "cpf_financial_services"
 CPF_CAPITAL_ADVISORY = "cpf_capital_advisory"
 
-TODAY = date(2026, 6, 30)
+TODAY = date.today()
 DEFAULT_OVERDUE_DAYS = 90
+# One full year of trailing data so MoM/QoQ/YTD + their prior windows are
+# all populated — Phase 5 Round 2 §Workstream 1a.
+TRAILING_DAYS = 365
 
 # Rukisha
 NUM_LOANS = 850
@@ -122,6 +125,10 @@ def generate_rukisha_loans(num_loans: int = NUM_LOANS) -> pd.DataFrame:
                 "outstanding_balance": outstanding_balance,
                 "days_overdue": days_overdue,
                 "status": status,
+                # Spread origination across the trailing year so as-of-period
+                # stock KPIs (Portfolio Value, Active Borrowers) can be
+                # window-filtered by the orchestration layer.
+                "origination_date": _random_date_within(TRAILING_DAYS).isoformat(),
             }
         )
     return pd.DataFrame(rows)
@@ -147,14 +154,14 @@ def generate_rukisha_repayments(loans: pd.DataFrame) -> pd.DataFrame:
                 weights=[0.8, 0.15, 0.05],
             )[0]
 
-        paid_date = _random_date_within(180).isoformat() if collected_fraction > 0 else None
+        paid_date = _random_date_within(TRAILING_DAYS).isoformat() if collected_fraction > 0 else None
         rows.append(
             {
                 "id": _uid(),
                 "loan_account_id": loan["id"],
                 "amount_due": amount_due,
                 "amount_paid": round(amount_due * collected_fraction, 2),
-                "due_date": _random_date_within(180).isoformat(),
+                "due_date": _random_date_within(TRAILING_DAYS).isoformat(),
                 "paid_date": paid_date,
             }
         )
@@ -173,8 +180,11 @@ def generate_rukisha_wallets(num_wallets: int = NUM_WALLETS) -> pd.DataFrame:
                 "status": "active" if is_active else "dormant",
                 "last_transaction_at": (
                     _random_date_within(30).isoformat() if is_active
-                    else _random_date_within(365).isoformat()
+                    else _random_date_within(TRAILING_DAYS).isoformat()
                 ),
+                # Spread wallet opening across the trailing year so Active
+                # Wallets can be computed as-of a period window.
+                "opened_date": _random_date_within(TRAILING_DAYS).isoformat(),
             }
         )
     return pd.DataFrame(rows)
@@ -194,7 +204,9 @@ def generate_rukisha_transactions(wallets: pd.DataFrame, num_transactions: int =
                 "wallet_id": random.choice(active_wallet_ids),
                 "type": random.choice(["merchant_payment", "transfer"]),
                 "amount": round(random.uniform(100, 25_000), 2),
-                "created_at": _random_date_within(30).isoformat(),
+                # Full trailing year so MoM / QoQ / YTD windows (and their
+                # prior-period counterparts) are all populated.
+                "created_at": _random_date_within(TRAILING_DAYS).isoformat(),
             }
         )
     return pd.DataFrame(rows)
@@ -212,6 +224,7 @@ def generate_rukisha_savings(num_savers: int = NUM_SAVERS) -> pd.DataFrame:
                 "account_holder_id": _uid(),
                 "savings_type": savings_type,
                 "balance": round(random.uniform(500, 60_000), 2),
+                "opened_date": _random_date_within(TRAILING_DAYS).isoformat(),
             }
         )
     return pd.DataFrame(rows)
@@ -231,6 +244,7 @@ def generate_pension_schemes(num_schemes: int = NUM_PENSION_SCHEMES) -> pd.DataF
                 "id": _uid(),
                 "subsidiary_id": CPF_FINANCIAL_SERVICES,
                 "status": "active" if random.random() < 0.90 else "closed",
+                "opened_date": _random_date_within(TRAILING_DAYS).isoformat(),
             }
         )
     return pd.DataFrame(rows)
@@ -243,12 +257,36 @@ def generate_scheme_members(schemes: pd.DataFrame, avg_members_per_scheme: int =
     hi = int(avg_members_per_scheme * 1.5)
     for scheme_id in schemes["id"]:
         for _ in range(random.randint(lo, hi)):
-            rows.append({"id": _uid(), "pension_scheme_id": scheme_id, "member_id": _uid()})
+            rows.append(
+                {
+                    "id": _uid(),
+                    "pension_scheme_id": scheme_id,
+                    "member_id": _uid(),
+                    "joined_date": _random_date_within(TRAILING_DAYS).isoformat(),
+                }
+            )
     return pd.DataFrame(rows)
 
 
-def generate_contributions(schemes: pd.DataFrame, period: str = "2026-06") -> pd.DataFrame:
-    """One contribution per scheme per period."""
+def _trailing_periods(months: int = 12) -> list[str]:
+    """The `months` calendar periods ("YYYY-MM") ending at TODAY's month —
+    used so MoM/QoQ/YTD graphs (Phase 5 Extended UI Enhancements §9.7) have
+    genuine multi-month data instead of a single hard-coded period."""
+    periods = []
+    for i in range(months - 1, -1, -1):
+        y, m = TODAY.year, TODAY.month - i
+        while m < 1:
+            m += 12
+            y -= 1
+        periods.append(f"{y:04d}-{m:02d}")
+    return periods
+
+
+def generate_contributions(schemes: pd.DataFrame, periods: list[str] | None = None) -> pd.DataFrame:
+    """One contribution per scheme per period, across the trailing months —
+    real multi-period data (Phase 5 Extended UI Enhancements §9.7), not the
+    single hard-coded "2026-06" this generator originally produced."""
+    periods = periods or _trailing_periods()
     return pd.DataFrame(
         [
             {
@@ -257,13 +295,15 @@ def generate_contributions(schemes: pd.DataFrame, period: str = "2026-06") -> pd
                 "amount": round(random.uniform(500_000, 12_000_000), 2),
                 "period": period,
             }
+            for period in periods
             for scheme_id in schemes["id"]
         ]
     )
 
 
-def generate_withdrawals(schemes: pd.DataFrame, period: str = "2026-06") -> pd.DataFrame:
-    """Withdrawals for ~60% of schemes in the period."""
+def generate_withdrawals(schemes: pd.DataFrame, periods: list[str] | None = None) -> pd.DataFrame:
+    """Withdrawals for ~60% of schemes, across the trailing months."""
+    periods = periods or _trailing_periods()
     return pd.DataFrame(
         [
             {
@@ -272,6 +312,7 @@ def generate_withdrawals(schemes: pd.DataFrame, period: str = "2026-06") -> pd.D
                 "amount": round(random.uniform(0, 3_000_000), 2),
                 "period": period,
             }
+            for period in periods
             for scheme_id in schemes["id"]
             if random.random() < 0.6
         ]
@@ -288,6 +329,7 @@ def generate_trust_accounts(num_trusts: int = NUM_TRUST_ACCOUNTS) -> pd.DataFram
                 "subsidiary_id": CPF_FINANCIAL_SERVICES,
                 "trust_asset_value": round(random.uniform(20_000_000, 400_000_000), 2),
                 "status": "active" if random.random() < 0.90 else "closed",
+                "opened_date": _random_date_within(TRAILING_DAYS).isoformat(),
             }
         )
     return pd.DataFrame(rows)
@@ -298,13 +340,28 @@ def generate_trust_beneficiaries(trusts: pd.DataFrame, avg_beneficiaries: int = 
     rows = []
     for trust_id in trusts["id"]:
         for _ in range(random.randint(10, avg_beneficiaries * 2)):
-            rows.append({"id": _uid(), "trust_account_id": trust_id, "beneficiary_id": _uid()})
+            rows.append(
+                {
+                    "id": _uid(),
+                    "trust_account_id": trust_id,
+                    "beneficiary_id": _uid(),
+                    "added_date": _random_date_within(TRAILING_DAYS).isoformat(),
+                }
+            )
     return pd.DataFrame(rows)
 
 
 def generate_agency_mandates(num_principals: int = NUM_AGENCY_MANDATES) -> pd.DataFrame:
     return pd.DataFrame(
-        [{"id": _uid(), "subsidiary_id": CPF_FINANCIAL_SERVICES, "principal_id": _uid()} for _ in range(num_principals)]
+        [
+            {
+                "id": _uid(),
+                "subsidiary_id": CPF_FINANCIAL_SERVICES,
+                "principal_id": _uid(),
+                "started_date": _random_date_within(TRAILING_DAYS).isoformat(),
+            }
+            for _ in range(num_principals)
+        ]
     )
 
 
@@ -320,13 +377,16 @@ def generate_agency_transactions(mandates: pd.DataFrame, avg_per_mandate: int = 
                     "id": _uid(),
                     "agency_mandate_id": mandate_id,
                     "amount": round(random.uniform(1_000, 150_000), 2),
-                    "created_at": _random_date_within(90).isoformat(),
+                    "created_at": _random_date_within(TRAILING_DAYS).isoformat(),
                 }
             )
     return pd.DataFrame(rows)
 
 
-def generate_fee_ledger(num_entries: int = NUM_FEE_ENTRIES, period: str = "2026-06") -> pd.DataFrame:
+def generate_fee_ledger(num_entries: int = NUM_FEE_ENTRIES, periods: list[str] | None = None) -> pd.DataFrame:
+    """Fee entries spread evenly across the trailing months (same total row
+    count as before — still within the <=900-rows-per-table cap)."""
+    periods = periods or _trailing_periods()
     return pd.DataFrame(
         [
             {
@@ -334,7 +394,7 @@ def generate_fee_ledger(num_entries: int = NUM_FEE_ENTRIES, period: str = "2026-
                 "subsidiary_id": CPF_FINANCIAL_SERVICES,
                 "source": "agency",
                 "fee_amount": round(random.uniform(10_000, 800_000), 2),
-                "period": period,
+                "period": random.choice(periods),
             }
             for _ in range(num_entries)
         ]
@@ -354,6 +414,7 @@ def generate_reit_holdings(num_holders: int = NUM_REIT_HOLDERS) -> pd.DataFrame:
                 "subsidiary_id": CPF_CAPITAL_ADVISORY,
                 "holder_id": _uid(),
                 "unit_balance": round(random.uniform(50, 20_000), 2),
+                "acquired_date": _random_date_within(TRAILING_DAYS).isoformat(),
             }
             for _ in range(num_holders)
         ]
