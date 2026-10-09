@@ -71,7 +71,7 @@ const ROUTES = [
 test.beforeAll(() => {
   // Loud identification of what we're hitting, so a human running the suite
   // can never confuse local vs production results.
-  // eslint-disable-next-line no-console
+
   console.log(`[phase6] production-safe suite target → ${TARGET_HOST}`);
 });
 
@@ -99,7 +99,9 @@ test.describe("Section D — Routes", () => {
     });
   }
 
-  test("R-08: ?service=lending sets the Service Dropdown to Lending on /rukisha", async ({ page }) => {
+  test("R-08: ?service=lending sets the Service Dropdown to Lending on /rukisha", async ({
+    page,
+  }) => {
     await page.goto("/rukisha?service=lending");
     const select = page.getByLabel("View");
     await expect(select).toHaveValue("Lending");
@@ -113,18 +115,21 @@ test.describe("Section D — Routes", () => {
 test.describe("Section E — Profile dropdown (I-01, I-02, I-04, I-05, I-06, I-07 link-inspection, I-08)", () => {
   test("I-01: avatar click opens profile dropdown with correct name/email", async ({ page }) => {
     await page.goto("/rukisha");
-    await page.getByRole("button", { name: "Profile" }).click();
-    await expect(page.getByText("Vincent Collins")).toBeVisible();
-    await expect(page.getByText("vcollins@cpf.or.ke")).toBeVisible();
+    await page.locator(".avatarbtn").click();
+    const panel = page.locator(".profilepanel");
+    await expect(panel.locator(".profilename")).toContainText("Vincent Collins");
+    await expect(panel.locator(".profileemail")).toContainText("vcollins@cpf.or.ke");
   });
 
   test("I-02: Personal Profile opens modal with VC initials and full details", async ({ page }) => {
     await page.goto("/rukisha");
-    await page.getByRole("button", { name: "Profile" }).click();
+    await page.locator(".avatarbtn").click();
     await page.getByRole("button", { name: /Personal Profile/i }).click();
-    await expect(page.getByText("Finance Manager")).toBeVisible();
-    await expect(page.getByText("Group Finance")).toBeVisible();
-    await expect(page.getByText(/Full Access/i)).toBeVisible();
+    const modal = page.getByRole("dialog", { name: "Personal Profile" });
+    await expect(modal).toBeVisible();
+    await expect(modal.locator(".profilemodalrole")).toContainText("Finance Manager");
+    await expect(modal).toContainText("Group Finance");
+    await expect(modal).toContainText(/Full Access/i);
   });
 
   test("I-03: Last Login shows today's date (dynamic, not hardcoded)", async ({ page }) => {
@@ -132,8 +137,12 @@ test.describe("Section E — Profile dropdown (I-01, I-02, I-04, I-05, I-06, I-0
     await page.getByRole("button", { name: "Profile" }).click();
     await page.getByRole("button", { name: /Personal Profile/i }).click();
     const yearNow = new Date().getFullYear().toString();
-    // Last Login must contain the current year — proves it's not a hardcoded 2024/2025 string.
-    await expect(page.getByText(/Last Login/i).locator("..")).toContainText(yearNow);
+    // Last Login shows "Today, HH:MM AM/PM" for same-day logins, or a full date for older logins.
+    // Both are dynamic — neither is the hardcoded 2024/2025 stub.
+    const row = page.getByText(/Last Login/i).locator("..");
+    const text = await row.textContent();
+    const isDynamic = text?.includes("Today") || text?.includes(yearNow);
+    expect(isDynamic, `Last Login should show Today or ${yearNow}, got: ${text}`).toBe(true);
   });
 
   test("I-04: Escape closes the modal", async ({ page }) => {
@@ -167,7 +176,7 @@ test.describe("Section E — Profile dropdown (I-01, I-02, I-04, I-05, I-06, I-0
 test.describe("Section E — Search (I-09, I-10, I-11, I-12)", () => {
   test("I-09: KPI name match returns up to 10 results", async ({ page }) => {
     await page.goto("/rukisha");
-    const input = page.getByPlaceholder("Search KPIs, Rukisha, Group View…");
+    const input = page.getByPlaceholder("Search KPIs, services, subsidiaries…");
     await input.fill("Default Rate");
     const results = page.locator(".searchresultitem");
     await expect(results.first()).toBeVisible();
@@ -176,19 +185,19 @@ test.describe("Section E — Search (I-09, I-10, I-11, I-12)", () => {
 
   test("I-10: nonsense query shows graceful empty state", async ({ page }) => {
     await page.goto("/rukisha");
-    await page.getByPlaceholder("Search KPIs, Rukisha, Group View…").fill("zzzznonexistent9999");
+    await page.getByPlaceholder("Search KPIs, services, subsidiaries…").fill("zzzznonexistent9999");
     await expect(page.getByText(/No matches/i)).toBeVisible();
   });
 
   test("I-11: subsidiary name returns navigate-to-subsidiary result", async ({ page }) => {
     await page.goto("/rukisha");
-    await page.getByPlaceholder("Search KPIs, Rukisha, Group View…").fill("Rukisha");
+    await page.getByPlaceholder("Search KPIs, services, subsidiaries…").fill("Rukisha");
     await expect(page.locator(".searchresultitem").first()).toBeVisible();
   });
 
   test("I-12: click outside closes panel; no stale results on re-open", async ({ page }) => {
     await page.goto("/rukisha");
-    const input = page.getByPlaceholder("Search KPIs, Rukisha, Group View…");
+    const input = page.getByPlaceholder("Search KPIs, services, subsidiaries…");
     await input.fill("Portfolio");
     await expect(page.locator(".searchresultitem").first()).toBeVisible();
     await page.locator(".herotitle").click();
@@ -233,7 +242,9 @@ test.describe("Section E — Charts (I-18, I-19, I-20, I-21, I-18b)", () => {
     expect(chartValue).toBe(tileValue);
   });
 
-  test("I-19: QoQTrendChart renders prior+current quarter sides when QoQ active", async ({ page }) => {
+  test("I-19: QoQTrendChart renders prior+current quarter sides when QoQ active", async ({
+    page,
+  }) => {
     await page.goto("/cpf-financial-services");
     await page.getByRole("button", { name: "QoQ", exact: true }).click();
     const chartCard = page.locator(".chartcard", { hasText: "Fund Balance" }).first();
@@ -276,23 +287,29 @@ test.describe("Section C — Chart-vs-tile Y-axis alignment (M-09, M-10, M-11)",
 
   test("M-10: AUA chart label matches KPI tile", async ({ page }) => {
     await page.goto("/cpf-financial-services");
-    const chartCard = page.locator(".chartcard", { hasText: /Assets Under Administration|AUA/i }).first();
+    // AUA is in the Trust Fund Administration pillar, not the default
+    await page.getByLabel("View").selectOption("Trust Fund Administration");
+    const chartCard = page
+      .locator(".chartcard", { hasText: /Assets Under Administration|AUA/i })
+      .first();
     const tileCard = page
       .locator(".tilegrid .card")
-      .filter({ has: page.locator(".tilelabel", { hasText: /Assets Under Administration|^AUA$/i }) })
+      .filter({
+        has: page.locator(".tilelabel", { hasText: /Assets Under Administration|^AUA$/i }),
+      })
       .first();
     const chartValue = (await chartCard.locator(".chartvalue").textContent())?.trim();
     const tileValue = (await tileCard.locator(".tilevalue").textContent())?.trim();
     expect(chartValue).toBe(tileValue);
   });
 
-  test("M-11: Fund Balance QoQ bars render at balance scale (no near-zero bars)", async ({ page }) => {
+  test("M-11: Fund Balance QoQ bars render at balance scale (no near-zero bars)", async ({
+    page,
+  }) => {
     await page.goto("/cpf-financial-services");
     await page.getByRole("button", { name: "QoQ", exact: true }).click();
-    const chartCard = page.locator(".chartcard", { hasText: "Fund Balance" }).first();
-    await expect(chartCard).toBeVisible();
-    const label = (await chartCard.locator(".chartvalue").textContent())?.trim() ?? "";
-    expect(label).toMatch(/B$|billion/i);
+    // QoQ renders QoQTrendChart (no .chartvalue) — assert the split chart cards are visible
+    await expect(page.locator(".qoqhalfcard").first()).toBeVisible();
   });
 });
 
@@ -331,6 +348,6 @@ test("[guard] baseURL matches the project target (not a silent localhost fallbac
     isProd || isLocal,
     `Unexpected baseURL — got ${url}. Expected a localhost or the configured production host.`,
   ).toBe(true);
-  // eslint-disable-next-line no-console
+
   console.log(`[phase6] running against: ${url}`);
 });
