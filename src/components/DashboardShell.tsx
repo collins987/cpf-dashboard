@@ -333,11 +333,11 @@ export function DashboardShell({
                 onClick={() => setProfileOpen((v) => !v)}
                 aria-label="Profile"
               >
-                <div className="avatar">FM</div>
+                <div className="avatar">VC</div>
               </button>
               <div className={profileOpen ? "profilepanel open" : "profilepanel"}>
-                <div className="profilename">Finance Manager</div>
-                <div className="profileemail">manager@cpfgroup.co.ke</div>
+                <div className="profilename">Vincent Collins</div>
+                <div className="profileemail">vcollins@cpf.or.ke</div>
                 <div className="profiledivider" />
                 <button
                   className="profilerow profilerow-btn"
@@ -360,8 +360,8 @@ export function DashboardShell({
               </div>
             </div>
             <div className="usermeta">
-              <span className="username">Finance Manager</span>
-              <span className="userrole">manager@cpfgroup.co.ke</span>
+              <span className="username">Vincent Collins</span>
+              <span className="userrole">Finance Manager</span>
             </div>
           </div>
         </div>

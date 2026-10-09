@@ -7,16 +7,21 @@ interface ProfileModalProps {
 }
 
 const USER = {
-  initials: "FM",
-  name: "Finance Manager",
-  email: "manager@cpfgroup.co.ke",
+  initials: "VC",
+  name: "Vincent Collins",
+  email: "vcollins@cpf.or.ke",
   role: "Finance Manager",
   department: "Group Finance",
   company: "CPF Group",
   accessLevel: "Full Access — All Subsidiaries",
   subsidiaries: ["Rukisha", "CPF Financial Services", "CPF Capital & Advisory"],
-  lastLogin: "Today, 09:14 AM",
 };
+
+function formatLastLogin(): string {
+  const now = new Date();
+  const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return `Today, ${time}`;
+}
 
 export function ProfileModal({ onClose }: ProfileModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -77,7 +82,7 @@ export function ProfileModal({ onClose }: ProfileModalProps) {
           </div>
           <div className="profilemodalrow">
             <span className="profilemodallabel">Last Login</span>
-            <span className="profilemodalvalue">{USER.lastLogin}</span>
+            <span className="profilemodalvalue">{formatLastLogin()}</span>
           </div>
         </div>
 
