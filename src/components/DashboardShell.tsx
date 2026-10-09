@@ -4,10 +4,12 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { MenuIcon, BellIcon, SearchIcon } from "./icons";
 import { SubsidiaryContent } from "./SubsidiaryContent";
 import { GroupSection } from "./GroupSection";
 import { AboutSection } from "./AboutSection";
+import { ProfileModal } from "./ProfileModal";
 import { searchCatalog } from "./search-catalog";
 import type { SubsidiaryView, GroupView } from "@/lib/orchestration/view-models";
 import type { RefreshMeta } from "@/lib/orchestration/refresh-meta";
@@ -186,9 +188,12 @@ export function DashboardShell({
   const pathname = usePathname();
   const active: TabId = TAB_FOR_ROUTE[pathname ?? ""] ?? "rukisha";
 
+  const router = useRouter();
+
   const [navOpen, setNavOpen] = useState(false);
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [period, setPeriod] = useState<Period>("YTD");
 
@@ -334,13 +339,24 @@ export function DashboardShell({
                 <div className="profilename">Finance Manager</div>
                 <div className="profileemail">manager@cpfgroup.co.ke</div>
                 <div className="profiledivider" />
-                <div className="profilerow">Personal Profile</div>
-                <div
-                  className="profilerow profilerow-disabled"
-                  title="Not available — authentication is outside this prototype's scope"
+                <button
+                  className="profilerow profilerow-btn"
+                  onClick={() => {
+                    setProfileOpen(false);
+                    setProfileModalOpen(true);
+                  }}
+                >
+                  Personal Profile
+                </button>
+                <button
+                  className="profilerow profilerow-btn profilerow-logout"
+                  onClick={() => {
+                    setProfileOpen(false);
+                    router.push("/login");
+                  }}
                 >
                   Logout
-                </div>
+                </button>
               </div>
             </div>
             <div className="usermeta">
@@ -453,6 +469,8 @@ export function DashboardShell({
           ) : null}
         </div>
       </div>
+
+      {profileModalOpen && <ProfileModal onClose={() => setProfileModalOpen(false)} />}
 
       <div className="footer">
         <div className="footerinner">

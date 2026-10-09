@@ -1280,6 +1280,208 @@ a {
   cursor: not-allowed;
 }
 
+.profilerow-btn {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: var(--font-body), sans-serif;
+  cursor: pointer;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #3a4150;
+  transition: color 0.15s;
+}
+
+.profilerow-btn:hover {
+  color: #1b3557;
+}
+
+.profilerow-logout {
+  color: #b3261e;
+}
+
+.profilerow-logout:hover {
+  color: #8b1a14;
+}
+
+/* ── Modal overlay ─────────────────────────────────────────── */
+
+.modaloverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 31, 53, 0.45);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(2px);
+}
+
+.profilemodal {
+  position: relative;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+  width: 100%;
+  max-width: 440px;
+  padding: 28px 28px 24px;
+  overflow: hidden;
+}
+
+.profilemodalclose {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: #8b93a1;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+
+.profilemodalclose:hover {
+  color: #0f1f35;
+  background: #f0f2f5;
+}
+
+.profilemodalhead {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 2px;
+}
+
+.profilemodalavatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #1b3557;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: var(--font-body), sans-serif;
+}
+
+.profilemodalname {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f1f35;
+}
+
+.profilemodalemail {
+  font-size: 12px;
+  color: #8b93a1;
+  margin-top: 2px;
+}
+
+.profilemodalrole {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1b3557;
+  background: #eef3fb;
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+
+.profilemodaldivider {
+  height: 1px;
+  background: #eef0f3;
+  margin: 16px 0;
+}
+
+.profilemodalsection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profilemodalsectiontitle {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8b93a1;
+  margin-bottom: 2px;
+}
+
+.profilemodalrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profilemodalrow-top {
+  align-items: flex-start;
+}
+
+.profilemodallabel {
+  font-size: 12px;
+  color: #8b93a1;
+  flex-shrink: 0;
+  min-width: 100px;
+}
+
+.profilemodalvalue {
+  font-size: 13px;
+  color: #0f1f35;
+  font-weight: 500;
+  text-align: right;
+}
+
+.profilemodalchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.profilemodalchip {
+  font-size: 11px;
+  font-weight: 500;
+  color: #1b3557;
+  background: #eef3fb;
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+
+.profilemodalfoot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.profilemodalclosebtn {
+  background: #0f1f35;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 22px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body), sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.profilemodalclosebtn:hover {
+  background: #1b3557;
+}
+
 .searchwrap {
   position: relative;
   flex: 1 1 220px;
