@@ -18,7 +18,7 @@ const PRODUCTION_BASE_URL =
 const LOCAL_BASE_URL = process.env.LOCAL_BASE_URL ?? "http://localhost:3000";
 
 const envLabel = process.env.TEST_ENV ?? "(unspecified)";
-// eslint-disable-next-line no-console
+
 console.log(
   `[playwright] TEST_ENV=${envLabel}  local=${LOCAL_BASE_URL}  production=${PRODUCTION_BASE_URL}`,
 );
@@ -46,7 +46,7 @@ export default defineConfig({
     {
       name: "local",
       testDir: "./tests",
-      testIgnore: ["**/production-safe.spec.ts"], // production-safe tests run under the production project
+      testIgnore: ["**/production-safe.spec.ts", "**/unit/**"], // production-safe and vitest unit tests run separately
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },

@@ -10,6 +10,7 @@ import {
   buildKpiPeriodDeltas,
 } from "@/lib/orchestration/monthly-trend";
 import { buildRefreshMeta } from "@/lib/orchestration/refresh-meta";
+import { searchCatalog } from "@/components/search-catalog";
 import { sumInWindow, asOfWindow } from "@/lib/calculations/period";
 import { calculateAssetsUnderAdministration } from "@/lib/calculations/cpf-financial-services";
 import { FIXED_NOW, contribution, withdrawal, trust } from "./fixtures";
@@ -87,7 +88,12 @@ describe("orchestration — period buckets & deltas", () => {
 
   test("U-53: buildKpiPeriodDeltas — empty rows → every period N/A/flat", () => {
     type R = { d: string; v: number };
-    const r = buildKpiPeriodDeltas<R>([], (x) => x.d, (x) => x.v, FIXED_NOW);
+    const r = buildKpiPeriodDeltas<R>(
+      [],
+      (x) => x.d,
+      (x) => x.v,
+      FIXED_NOW,
+    );
     for (const p of ["MoM", "QoQ", "YTD"] as const) {
       expect(r[p]).toEqual({ deltaLabel: "N/A", deltaDirection: "flat" });
     }
@@ -106,39 +112,20 @@ describe("orchestration — period buckets & deltas", () => {
   // if the module cannot be resolved, we skip the tests with a documented
   // reason so Section B still records traceability.
   describe("searchCatalog (U-55/U-56/U-57)", () => {
-    let catalog: unknown = null;
-    try {
-      // Keep require dynamic so test collection does not fail if the module path shifts.
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      catalog = require("@/components/search-catalog");
-    } catch {
-      catalog = null;
-    }
-
-    const maybe = catalog ? test : test.skip;
-
-    maybe("U-55: searchCatalog — query matching a known KPI label returns it in top 10", () => {
-      const c = catalog as { searchCatalog?: (q: string) => unknown[] };
-      const fn = c.searchCatalog;
-      if (!fn) return;
-      const results = fn("Portfolio Value");
+    test("U-55: searchCatalog — query matching a known KPI label returns it in top 10", () => {
+      const results = searchCatalog("Portfolio Value");
       expect(results.length).toBeGreaterThan(0);
       expect(results.length).toBeLessThanOrEqual(10);
     });
 
-    maybe("U-56: searchCatalog — query matching nothing returns []", () => {
-      const c = catalog as { searchCatalog?: (q: string) => unknown[] };
-      const fn = c.searchCatalog;
-      if (!fn) return;
-      expect(fn("zzzznonexistentquery9999")).toEqual([]);
+    test("U-56: searchCatalog — query matching nothing returns []", () => {
+      expect(searchCatalog("zzzznonexistentquery9999")).toEqual([]);
     });
 
-    maybe("U-57: searchCatalog — subsidiary-name query returns a navigate-to-subsidiary result", () => {
-      const c = catalog as { searchCatalog?: (q: string) => unknown[] };
-      const fn = c.searchCatalog;
-      if (!fn) return;
-      const results = fn("Rukisha") as Array<{ kind?: string }>;
+    test("U-57: searchCatalog — subsidiary-name query returns a navigate-to-subsidiary result", () => {
+      const results = searchCatalog("Rukisha");
       expect(results.length).toBeGreaterThan(0);
+      expect(results.some((r) => r.type === "subsidiary")).toBe(true);
     });
   });
 
@@ -158,8 +145,20 @@ describe("orchestration — period buckets & deltas", () => {
       new Date(Date.UTC(2026, 2, 31, 23, 59, 59)),
     ];
     const priorRaw = monthEnds.map((end) => {
-      const cumC = sumInWindow(q1Contribs, (c) => c.createdAt, (c) => c.amount, EPOCH, end);
-      const cumW = sumInWindow(q1Withdrawals, (w) => w.createdAt, (w) => w.amount, EPOCH, end);
+      const cumC = sumInWindow(
+        q1Contribs,
+        (c) => c.createdAt,
+        (c) => c.amount,
+        EPOCH,
+        end,
+      );
+      const cumW = sumInWindow(
+        q1Withdrawals,
+        (w) => w.createdAt,
+        (w) => w.amount,
+        EPOCH,
+        end,
+      );
       return OPENING_BALANCE + cumC - cumW + INVESTMENT_RETURNS;
     });
     for (const v of priorRaw) {
