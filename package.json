@@ -9,7 +9,15 @@
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:unit:coverage": "vitest run --coverage",
+    "test:e2e:local": "cross-env TEST_ENV=local playwright test --project=local",
+    "test:e2e:local:prod-safe": "cross-env TEST_ENV=local playwright test --project=local-only-production-safe",
+    "test:e2e:production": "cross-env TEST_ENV=production playwright test --project=production",
+    "test:e2e:report": "playwright show-report playwright-report",
+    "test:all:local": "npm run test:unit && npm run test:e2e:local"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -31,6 +39,8 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@types/node": "^20",
+    "@vitest/coverage-v8": "^2.1.9",
+    "cross-env": "^7.0.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
@@ -39,6 +49,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.9"
   }
 }
