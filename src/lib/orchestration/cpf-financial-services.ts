@@ -24,8 +24,14 @@ import {
   getFeeLedger,
 } from "@/lib/data/cpf-financial-services-queries";
 import { formatKes, formatKesExact, formatNumber, formatPercent } from "@/lib/format";
-import { buildMonthlyTrend, formatPeriodDelta } from "./monthly-trend";
-import { getPeriodWindow, periodDeltaPct, asOfWindow, inWindow } from "@/lib/calculations/period";
+import { buildMonthlyTrend, buildPeriodBuckets, formatPeriodDelta } from "./monthly-trend";
+import {
+  getPeriodWindow,
+  periodDeltaPct,
+  asOfWindow,
+  inWindow,
+  sumInWindow,
+} from "@/lib/calculations/period";
 import type { Period } from "@/lib/calculations/period";
 import type { SubsidiaryView, SubsidiaryTotals } from "./view-models";
 
@@ -129,12 +135,100 @@ function buildCpffsViewForPeriod(
     qoqPair: agencyQoQPair,
   } = agencyPeriodData;
   const fundBalancePeriodData = fundBalanceTrend.byPeriod[period];
-  const {
-    rawValues: fundRawValues,
-    monthLabels: fundMonthLabels,
-    quarterBoundaryLabel: fundQBoundary,
-    qoqPair: fundQoQPair,
-  } = fundBalancePeriodData;
+  const { monthLabels: fundMonthLabels, quarterBoundaryLabel: fundQBoundary } =
+    fundBalancePeriodData;
+
+  // Fund Balance is a stock metric: compute running balance at each bucket end so the
+  // chart y-axis is at the same scale (~18B) as the KPI card, not just raw contribution flows.
+  const EPOCH = new Date(0);
+  const fundBuckets = buildPeriodBuckets(period, now);
+  const fundRawValues = fundBuckets.map((b) => {
+    const cumContrib = sumInWindow(
+      contributions,
+      (c) => c.createdAt,
+      (c) => c.amount,
+      EPOCH,
+      b.end,
+    );
+    const cumWithdraw = sumInWindow(
+      withdrawals,
+      (ww) => ww.createdAt,
+      (ww) => ww.amount,
+      EPOCH,
+      b.end,
+    );
+    return OPENING_BALANCE + cumContrib - cumWithdraw + INVESTMENT_RETURNS;
+  });
+
+  // AUA is also a stock metric: sum trust asset values as-of each bucket end.
+  const auaBuckets = buildPeriodBuckets(period, now);
+  const auaRawValues = auaBuckets.map((b) => {
+    const trustsAsOfBucket = asOfWindow(trustAccounts, (t) => t.openedDate, b.end);
+    return calculateAssetsUnderAdministration(trustsAsOfBucket);
+  });
+
+  // Fix qoqPair rawValues for fund balance: same running-balance calculation per QoQ month.
+  const fundQoQPair = fundBalancePeriodData.qoqPair
+    ? {
+        prior: {
+          ...fundBalancePeriodData.qoqPair.prior,
+          rawValues: fundBalancePeriodData.qoqPair.prior.monthLabels.map((_, i) => {
+            const priorQ =
+              Math.floor(now.getUTCMonth() / 3) === 0 ? 3 : Math.floor(now.getUTCMonth() / 3) - 1;
+            const priorYear =
+              Math.floor(now.getUTCMonth() / 3) === 0
+                ? now.getUTCFullYear() - 1
+                : now.getUTCFullYear();
+            const mo = priorQ * 3 + i;
+            const bucketEnd = new Date(Date.UTC(priorYear, mo + 1, 0, 23, 59, 59));
+            const cumContrib = sumInWindow(
+              contributions,
+              (c) => c.createdAt,
+              (c) => c.amount,
+              EPOCH,
+              bucketEnd,
+            );
+            const cumWithdraw = sumInWindow(
+              withdrawals,
+              (ww) => ww.createdAt,
+              (ww) => ww.amount,
+              EPOCH,
+              bucketEnd,
+            );
+            return OPENING_BALANCE + cumContrib - cumWithdraw + INVESTMENT_RETURNS;
+          }),
+        },
+        current: {
+          ...fundBalancePeriodData.qoqPair.current,
+          rawValues: [fundBalance],
+        },
+      }
+    : undefined;
+
+  // AUA qoqPair rawValues
+  const auaQoQPair = fundBalancePeriodData.qoqPair
+    ? {
+        prior: {
+          ...fundBalancePeriodData.qoqPair.prior,
+          rawValues: fundBalancePeriodData.qoqPair.prior.monthLabels.map((_, i) => {
+            const priorQ =
+              Math.floor(now.getUTCMonth() / 3) === 0 ? 3 : Math.floor(now.getUTCMonth() / 3) - 1;
+            const priorYear =
+              Math.floor(now.getUTCMonth() / 3) === 0
+                ? now.getUTCFullYear() - 1
+                : now.getUTCFullYear();
+            const mo = priorQ * 3 + i;
+            const bucketEnd = new Date(Date.UTC(priorYear, mo + 1, 0, 23, 59, 59));
+            const trustsAsOfBucket = asOfWindow(trustAccounts, (t) => t.openedDate, bucketEnd);
+            return calculateAssetsUnderAdministration(trustsAsOfBucket);
+          }),
+        },
+        current: {
+          ...fundBalancePeriodData.qoqPair.current,
+          rawValues: [aua],
+        },
+      }
+    : undefined;
 
   const view: SubsidiaryView = {
     tag: "Pensions, Trust & Agency",
@@ -175,7 +269,7 @@ function buildCpffsViewForPeriod(
           color: "cpffs",
           rawValues: fundRawValues,
           monthLabels: fundMonthLabels,
-          latestValueLabel: fundBalancePeriodData.latestValueLabel,
+          latestValueLabel: formatKes(fundBalance),
           quarterBoundaryLabel: fundQBoundary,
           qoqPair: fundQoQPair,
         },
@@ -212,11 +306,11 @@ function buildCpffsViewForPeriod(
         trend: {
           label: `${w.label} AUA Trend (KES B)`,
           color: "cpffs",
-          rawValues: fundRawValues,
+          rawValues: auaRawValues,
           monthLabels: fundMonthLabels,
           latestValueLabel: formatKes(aua),
           quarterBoundaryLabel: fundQBoundary,
-          qoqPair: fundQoQPair,
+          qoqPair: auaQoQPair,
         },
       },
       {

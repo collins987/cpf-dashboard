@@ -36,6 +36,53 @@ export interface MonthlyTrendResult {
   >;
 }
 
+/** Returns the per-period chart buckets (same shape as used internally by buildMonthlyTrend). */
+export function buildPeriodBuckets(
+  period: Period,
+  now: Date,
+): { start: Date; end: Date; label: string }[] {
+  if (period === "MoM") {
+    const todayEnd = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59),
+    );
+    return Array.from({ length: 4 }, (_, i) => {
+      const daysBack = (3 - i) * 7;
+      const s = new Date(todayEnd.getTime() - (daysBack + 6) * 86_400_000);
+      s.setUTCHours(0, 0, 0, 0);
+      const e = new Date(todayEnd.getTime() - daysBack * 86_400_000);
+      return { start: s, end: e, label: `W${i + 1}` };
+    });
+  }
+  if (period === "QoQ") {
+    const q = Math.floor(now.getUTCMonth() / 3);
+    const priorQStart = q * 3 - 3;
+    return [
+      ...Array.from({ length: 3 }, (_, i) => {
+        const baseMonth = priorQStart + i;
+        const yr = now.getUTCFullYear() + Math.floor(baseMonth / 12);
+        const mo = ((baseMonth % 12) + 12) % 12;
+        const s = new Date(Date.UTC(yr, mo, 1));
+        const e = new Date(Date.UTC(yr, mo + 1, 0, 23, 59, 59));
+        return { start: s, end: e, label: MONTH_ABBR[mo] };
+      }),
+      {
+        start: new Date(Date.UTC(now.getUTCFullYear(), q * 3, 1)),
+        end: new Date(
+          Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59),
+        ),
+        label: MONTH_ABBR[q * 3],
+      },
+    ];
+  }
+  // YTD
+  const monthCount = now.getUTCMonth() + 1;
+  return Array.from({ length: monthCount }, (_, i) => {
+    const s = new Date(Date.UTC(now.getUTCFullYear(), i, 1));
+    const e = new Date(Date.UTC(now.getUTCFullYear(), i + 1, 0, 23, 59, 59));
+    return { start: s, end: e, label: MONTH_ABBR[i] };
+  });
+}
+
 /**
  * Builds a genuine trailing-6-month trend from already-fetched rows that carry
  * a real date field (e.g. transaction.createdAt, deal.closeDate) — no new
