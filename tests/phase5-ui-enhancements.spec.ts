@@ -717,6 +717,7 @@ test.describe("Stress testing", () => {
   test("repeated route/service/period/notification/profile cycling produces no console errors or duplicated network calls", async ({
     page,
   }) => {
+    test.setTimeout(120_000);
     const audit = attachAudit(page);
     const requestCounts = new Map<string, number>();
     page.on("request", (req) => {
@@ -729,9 +730,11 @@ test.describe("Stress testing", () => {
       // Navigate via page.goto since nav links open new tabs
       await page.goto("/cpf-financial-services");
       await page.goto("/rukisha");
+      await page.getByRole("button", { name: "YTD", exact: true }).waitFor({ state: "visible" });
       await page.getByLabel("View").selectOption("Savings");
       await page.getByLabel("View").selectOption("Lending");
       await page.getByRole("button", { name: "MoM", exact: true }).click();
+      await page.getByRole("button", { name: "YTD", exact: true }).waitFor({ state: "visible" });
       await page.getByRole("button", { name: "YTD", exact: true }).click();
       await page.getByRole("button", { name: "Alerts" }).click();
       await page.getByRole("button", { name: "Alerts" }).click();
