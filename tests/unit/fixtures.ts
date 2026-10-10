@@ -235,7 +235,7 @@ export function issuance(partial: Partial<IssuanceRow> = {}): IssuanceRow {
     instrumentType: "sukuk",
     instrumentCode: "LNZ-SK-01",
     issuanceValue: 2_100_000_000,
-    profitRate: 0.1090,
+    profitRate: 0.109,
     amountOffered: 2_190_000_000,
     amountSubscribed: 2_100_000_000 * 0.96,
     issueDate: "2026-03-01",

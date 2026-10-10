@@ -18,12 +18,16 @@ const valueOf = (r: Row) => r.v;
 
 describe("period.ts", () => {
   test("U-01: sumInWindow — empty rows returns 0", () => {
-    expect(sumInWindow<Row>([], dateOf, valueOf, new Date("2026-01-01"), new Date("2026-12-31"))).toBe(0);
+    expect(
+      sumInWindow<Row>([], dateOf, valueOf, new Date("2026-01-01"), new Date("2026-12-31")),
+    ).toBe(0);
   });
 
   test("U-02: sumInWindow — rows outside window excluded", () => {
     const rows = [d("2025-01-01", 10), d("2027-01-01", 20)];
-    expect(sumInWindow(rows, dateOf, valueOf, new Date("2026-01-01"), new Date("2026-12-31"))).toBe(0);
+    expect(sumInWindow(rows, dateOf, valueOf, new Date("2026-01-01"), new Date("2026-12-31"))).toBe(
+      0,
+    );
   });
 
   test("U-03: sumInWindow — boundary dates included on both endpoints", () => {
@@ -36,7 +40,12 @@ describe("period.ts", () => {
   test("U-03b: sumInWindow with EPOCH start — cumulative lifetime sum (running-balance pattern)", () => {
     const EPOCH = new Date(0);
     const bucketEnd = new Date("2026-03-31T23:59:59Z");
-    const rows = [d("2024-01-01", 100), d("2025-06-15", 200), d("2026-03-01", 50), d("2026-04-15", 999)];
+    const rows = [
+      d("2024-01-01", 100),
+      d("2025-06-15", 200),
+      d("2026-03-01", 50),
+      d("2026-04-15", 999),
+    ];
     expect(sumInWindow(rows, dateOf, valueOf, EPOCH, bucketEnd)).toBe(350);
   });
 

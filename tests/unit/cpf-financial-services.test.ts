@@ -31,8 +31,20 @@ describe("cpf-financial-services.ts calculations", () => {
       contribution({ amount: 300_000_000, createdAt: "2026-04-20" }),
     ];
     const withdraws = [withdrawal({ amount: 100_000_000, createdAt: "2026-02-10" })];
-    const cumContrib = sumInWindow(contribs, (c) => c.createdAt, (c) => c.amount, EPOCH, bucketEnd);
-    const cumWithdraw = sumInWindow(withdraws, (w) => w.createdAt, (w) => w.amount, EPOCH, bucketEnd);
+    const cumContrib = sumInWindow(
+      contribs,
+      (c) => c.createdAt,
+      (c) => c.amount,
+      EPOCH,
+      bucketEnd,
+    );
+    const cumWithdraw = sumInWindow(
+      withdraws,
+      (w) => w.createdAt,
+      (w) => w.amount,
+      EPOCH,
+      bucketEnd,
+    );
     const balance = OPENING_BALANCE + cumContrib - cumWithdraw + INVESTMENT_RETURNS;
     expect(cumContrib).toBe(800_000_000);
     expect(cumWithdraw).toBe(100_000_000);
@@ -72,12 +84,19 @@ describe("cpf-financial-services.ts calculations", () => {
   });
 
   test("U-30: calculateAgencyFeeIncome — filters source === 'agency'", () => {
-    const fees = [fee({ source: "agency", feeAmount: 100 }), fee({ source: "agency", feeAmount: 50 })];
+    const fees = [
+      fee({ source: "agency", feeAmount: 100 }),
+      fee({ source: "agency", feeAmount: 50 }),
+    ];
     expect(calculateAgencyFeeIncome(fees)).toBe(150);
   });
 
   test("U-31: calculateMembers — duplicate memberIds counted once", () => {
-    const mems = [member({ memberId: "m-1" }), member({ memberId: "m-1" }), member({ memberId: "m-2" })];
+    const mems = [
+      member({ memberId: "m-1" }),
+      member({ memberId: "m-1" }),
+      member({ memberId: "m-2" }),
+    ];
     expect(calculateMembers(mems)).toBe(2);
   });
 });

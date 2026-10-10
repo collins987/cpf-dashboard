@@ -53,11 +53,7 @@ describe("cpf-capital-advisory.ts calculations", () => {
   });
 
   test("U-40: calculateUnitHolders — duplicate holderIds counted once", () => {
-    const h = [
-      holding({ holderId: "a" }),
-      holding({ holderId: "a" }),
-      holding({ holderId: "b" }),
-    ];
+    const h = [holding({ holderId: "a" }), holding({ holderId: "a" }), holding({ holderId: "b" })];
     expect(calculateUnitHolders(h)).toBe(2);
   });
 });
